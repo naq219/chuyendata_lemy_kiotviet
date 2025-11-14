@@ -4,7 +4,6 @@ import pino from 'pino';
 import { z } from 'zod';
 import * as fs from 'fs';
 import * as path from 'path';
-//import cho đúng thư mục ../kiotviet-client-sdk
 import { KiotVietClient } from 'kiotviet-client-sdk';
 import * as dotenv from 'dotenv';
 
@@ -52,6 +51,8 @@ const LemydeProductSchema = z.object({
   name: z.string(),
   cost_price: z.number(),
   retail_price: z.number(),
+  weight: z.number().nullable().optional(),
+  introduction: z.string().nullable().optional(),
   spm_code: z.string().nullable().optional(),
 });
 
@@ -199,11 +200,31 @@ class KiotVietMigrator {
   private lemyde: LemydeClient;
   private kiotviet: KiotVietClient;
   private state: MigrationState;
+  private branchId: number = 1; // Default branch
 
   constructor(kiotvietClient: KiotVietClient) {
     this.lemyde = new LemydeClient();
     this.kiotviet = kiotvietClient;
     this.state = loadState();
+  }
+
+  private async setBranchId(): Promise<void> {
+    try {
+      logger.info('Fetching branches from KiotViet...');
+      const branches = await this.kiotviet.branches?.list?.({ pageSize: 100 });
+      
+      if (branches?.data && branches.data.length > 0) {
+        logger.info({ branches: branches.data }, 'Available branches');
+        
+        // Use first branch
+        this.branchId = branches.data[0].id;
+        logger.info({ branchId: this.branchId }, 'Using branch');
+      } else {
+        logger.warn('No branches found, using default branchId=1');
+      }
+    } catch (error) {
+      logger.warn({ error }, 'Failed to fetch branches, using default branchId=1');
+    }
   }
 
   private async setErrorState(phase: string, error: Error) {
@@ -393,7 +414,7 @@ class KiotVietMigrator {
   // PHASE 2: CREATE CUSTOMERS
   // =========================================================================
 
- async phase2CreateCustomers(customers: LemydeCustomer[]): Promise<void> {
+  async phase2CreateCustomers(customers: LemydeCustomer[]): Promise<void> {
     try {
       logger.info('============ PHASE 2: CREATE CUSTOMERS ============');
       this.state.phase = 'create-customers';
@@ -417,7 +438,7 @@ class KiotVietMigrator {
           code: `LY${String(customer.customer_id).padStart(6, '0')}`,
           contactNumber: customer.phone,
           address: customer.address || '',
-          branchId: 1, // Default branch
+          branchId: this.branchId,
         });
 
         this.state.mappings.customers[customer.customer_id] = createdCustomer.id;
@@ -473,25 +494,13 @@ class KiotVietMigrator {
           throw new Error(`Duplicate product code: ${code}`);
         }
 
-        // Get/Create default category
-        const categories = await this.kiotviet.categories?.list?.({ pageSize: 1 });
-        let categoryId: number | undefined;
-
-        if (categories?.data && categories.data.length > 0) {
-          // Use first category as default
-          categoryId = categories.data[0].id;
-        }
-
-        // Create product
+        // Create product without categoryId (optional in KiotViet SDK)
         const createdProduct = await this.kiotviet.products.create({
           name: product.name,
           code,
           basePrice: product.cost_price,
-          retailPrice: product.retail_price,
-          categoryId,
           description: product.introduction || '',
-          weight: product.weight || 200,
-          allowsSale: true,
+          unit: 'Cái',
         });
 
         this.state.mappings.products[product.product_id] = createdProduct.id;
@@ -580,7 +589,7 @@ class KiotVietMigrator {
 
           // Create order
           const createdOrder = await this.kiotviet.orders.create({
-            branchId: 1, // Default branch
+            branchId: this.branchId, // Use detected branch
             customerId: kiotvietCustomerId,
             purchaseDate: order.date_created,
             description: order.note || '',
@@ -641,12 +650,15 @@ class KiotVietMigrator {
       logger.info('   KiotViet Migration Started');
       logger.info('================================');
 
+      // Get branch ID first
+      await this.setBranchId();
+
       // Phase 1: Fetch
       const { orders, detailOrders, customers, products } = await this.phase1Fetch();
 
       // Phase 2: Create Customers
-      await this.phase2CreateCustomers(customers);
-      return 
+      //await this.phase2CreateCustomers(customers);
+
       // Phase 3: Create Products
       await this.phase3CreateProducts(products);
 
@@ -678,8 +690,7 @@ class KiotVietMigrator {
       console.error(`State saved to: ${STATE_FILE}`);
       console.error('Run migration again after fixing the error.');
 
-      // Give logger time to flush before exiting
-      setTimeout(() => process.exit(1), 100);
+      process.exit(1);
     }
   }
 }
@@ -700,11 +711,6 @@ async function main() {
 }
 
 main().catch((error) => {
-  logger.error({ 
-    error: error.message, 
-    stack: error.stack,
-    name: error.name 
-  }, 'Unhandled error');
-  // Give logger time to flush before exiting
-  setTimeout(() => process.exit(1), 100);
+  logger.error({ error }, 'Unhandled error');
+   setTimeout(() => process.exit(1), 100);
 });

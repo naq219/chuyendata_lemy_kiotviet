@@ -4,7 +4,6 @@ import pino from 'pino';
 import { z } from 'zod';
 import * as fs from 'fs';
 import * as path from 'path';
-//import cho đúng thư mục ../kiotviet-client-sdk
 import { KiotVietClient } from 'kiotviet-client-sdk';
 import * as dotenv from 'dotenv';
 
@@ -52,6 +51,8 @@ const LemydeProductSchema = z.object({
   name: z.string(),
   cost_price: z.number(),
   retail_price: z.number(),
+  weight: z.number().nullable().optional(),
+  introduction: z.string().nullable().optional(),
   spm_code: z.string().nullable().optional(),
 });
 
@@ -147,6 +148,7 @@ class LemydeClient {
 
 const STATE_DIR = './migration';
 const STATE_FILE = path.join(STATE_DIR, 'state.json');
+const SKIPPED_FILE = path.join(STATE_DIR, 'skipped-products.jsonl');
 
 function ensureStateDir() {
   if (!fs.existsSync(STATE_DIR)) {
@@ -158,12 +160,19 @@ function loadState(): MigrationState {
   ensureStateDir();
   if (fs.existsSync(STATE_FILE)) {
     const data = fs.readFileSync(STATE_FILE, 'utf-8');
+    
     // Check if file is empty or contains only whitespace
     if (data.trim().length === 0) {
-      logger.warn('State file is empty, returning default state');
+      logger.warn('State file is empty, using default state');
       return getDefaultState();
     }
-    return JSON.parse(data);
+    
+    try {
+      return JSON.parse(data);
+    } catch (error) {
+      logger.warn({ error: (error as Error).message }, 'Failed to parse state file, using default state');
+      return getDefaultState();
+    }
   }
 
   return getDefaultState();
@@ -199,11 +208,31 @@ class KiotVietMigrator {
   private lemyde: LemydeClient;
   private kiotviet: KiotVietClient;
   private state: MigrationState;
+  private branchId: number = 1; // Default branch
 
   constructor(kiotvietClient: KiotVietClient) {
     this.lemyde = new LemydeClient();
     this.kiotviet = kiotvietClient;
     this.state = loadState();
+  }
+
+  private async setBranchId(): Promise<void> {
+    try {
+      logger.info('Fetching branches from KiotViet...');
+      const branches = await this.kiotviet.branches?.list?.({ pageSize: 100 });
+      
+      if (branches?.data && branches.data.length > 0) {
+        logger.info({ branches: branches.data }, 'Available branches');
+        
+        // Use first branch
+        this.branchId = branches.data[0].id;
+        logger.info({ branchId: this.branchId }, 'Using branch');
+      } else {
+        logger.warn('No branches found, using default branchId=1');
+      }
+    } catch (error) {
+      logger.warn({ error }, 'Failed to fetch branches, using default branchId=1');
+    }
   }
 
   private async setErrorState(phase: string, error: Error) {
@@ -393,7 +422,7 @@ class KiotVietMigrator {
   // PHASE 2: CREATE CUSTOMERS
   // =========================================================================
 
- async phase2CreateCustomers(customers: LemydeCustomer[]): Promise<void> {
+  async phase2CreateCustomers(customers: LemydeCustomer[]): Promise<void> {
     try {
       logger.info('============ PHASE 2: CREATE CUSTOMERS ============');
       this.state.phase = 'create-customers';
@@ -417,7 +446,7 @@ class KiotVietMigrator {
           code: `LY${String(customer.customer_id).padStart(6, '0')}`,
           contactNumber: customer.phone,
           address: customer.address || '',
-          branchId: 1, // Default branch
+          branchId: this.branchId,
         });
 
         this.state.mappings.customers[customer.customer_id] = createdCustomer.id;
@@ -454,44 +483,45 @@ class KiotVietMigrator {
     return match ? match[0] : `P${Date.now()}`;
   }
 
-  async phase3CreateProducts(products: LemydeProduct[]): Promise<void> {
+async phase3CreateProducts(products: LemydeProduct[]): Promise<void> {
+    logger.info('Starting product creation');
     try {
       logger.info('============ PHASE 3: CREATE PRODUCTS ============');
       this.state.phase = 'create-products';
       saveState(this.state);
 
       for (const product of products) {
-        // Check if code exists
-        const code = `P${String(product.product_id).padStart(6, '0')}`;
-        const existing = await this.kiotviet.products.getByCode(code);
+        const code = `LY${String(product.product_id).padStart(6, '0')}`;
+        
+        // Check if product already exists in KiotViet
+        let existingProduct = null;
+        try {
+          existingProduct = await this.kiotviet.products.getByCode(code);
+        } catch (error) {
+          // Product not found, we'll create it
+          existingProduct = null;
+        }
 
-        if (existing) {
+        if (existingProduct) {
           logger.warn(
-            { lemydeId: product.product_id, code },
-            'Product code already exists in KiotViet - STOPPING'
+            { lemydeId: product.product_id, code, kiotvietId: existingProduct.id },
+            'Product already exists in KiotViet - SKIPPING CREATION'
           );
-          throw new Error(`Duplicate product code: ${code}`);
+          
+          // Update mapping with existing product
+          this.state.mappings.products[product.product_id] = existingProduct.id;
+          saveState(this.state);
+          continue;
         }
 
-        // Get/Create default category
-        const categories = await this.kiotviet.categories?.list?.({ pageSize: 1 });
-        let categoryId: number | undefined;
-
-        if (categories?.data && categories.data.length > 0) {
-          // Use first category as default
-          categoryId = categories.data[0].id;
-        }
-
-        // Create product
+        // Create product with default category
         const createdProduct = await this.kiotviet.products.create({
           name: product.name,
           code,
           basePrice: product.cost_price,
-          retailPrice: product.retail_price,
-          categoryId,
           description: product.introduction || '',
-          weight: product.weight || 200,
-          allowsSale: true,
+          unit: 'Cái',
+          categoryId: 1477260, // Default category "Gia dụng"
         });
 
         this.state.mappings.products[product.product_id] = createdProduct.id;
@@ -518,6 +548,7 @@ class KiotVietMigrator {
       throw error;
     }
   }
+
 
   // =========================================================================
   // PHASE 4: CREATE ORDERS
@@ -580,7 +611,7 @@ class KiotVietMigrator {
 
           // Create order
           const createdOrder = await this.kiotviet.orders.create({
-            branchId: 1, // Default branch
+            branchId: this.branchId, // Use detected branch
             customerId: kiotvietCustomerId,
             purchaseDate: order.date_created,
             description: order.note || '',
@@ -641,17 +672,20 @@ class KiotVietMigrator {
       logger.info('   KiotViet Migration Started');
       logger.info('================================');
 
+      // Get branch ID first
+      await this.setBranchId();
+
       // Phase 1: Fetch
       const { orders, detailOrders, customers, products } = await this.phase1Fetch();
 
       // Phase 2: Create Customers
-      await this.phase2CreateCustomers(customers);
-      return 
+     // await this.phase2CreateCustomers(customers);
+
       // Phase 3: Create Products
       await this.phase3CreateProducts(products);
 
       // Phase 4: Create Orders
-      await this.phase4CreateOrders(orders, detailOrders);
+     //817564 await this.phase4CreateOrders(orders, detailOrders);
 
       // Complete
       this.state.phase = 'complete';
@@ -670,6 +704,7 @@ class KiotVietMigrator {
       console.log('\n✅ Migration successful!');
       console.log(`State saved to: ${STATE_FILE}`);
     } catch (error) {
+         logger.error('--- lỗi gì');
       const err = error as Error;
       logger.error({ error: err.message, stack: err.stack }, 'Migration failed');
 
@@ -678,8 +713,7 @@ class KiotVietMigrator {
       console.error(`State saved to: ${STATE_FILE}`);
       console.error('Run migration again after fixing the error.');
 
-      // Give logger time to flush before exiting
-      setTimeout(() => process.exit(1), 100);
+       //setTimeout(() => process.exit(1), 100);
     }
   }
 }
@@ -705,6 +739,5 @@ main().catch((error) => {
     stack: error.stack,
     name: error.name 
   }, 'Unhandled error');
-  // Give logger time to flush before exiting
-  setTimeout(() => process.exit(1), 100);
+  //process.exit(1);
 });
