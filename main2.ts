@@ -401,6 +401,15 @@ class KiotVietMigrator {
       this.state.statistics.orders.total = orders.length;
       saveState(this.state);
 
+      // Lưu dữ liệu customers vào file JSON để backup
+    //   try {
+    //     const customersPath = path.join(__dirname, 'data', 'customers.json');
+    //     fs.writeFileSync(customersPath, JSON.stringify(customers, null, 2));
+    //     logger.info({ path: customersPath, count: customers.length }, 'Đã lưu dữ liệu customers vào file');
+    //   } catch (error) {
+    //     logger.warn({ error: (error as Error).message }, 'Không thể lưu file customers.json');
+    //   }
+
       logger.info(
         {
           orders: orders.length,
@@ -678,14 +687,20 @@ async phase3CreateProducts(products: LemydeProduct[]): Promise<void> {
       // Phase 1: Fetch
       const { orders, detailOrders, customers, products } = await this.phase1Fetch();
 
+
+
+     return ;
+      //  return 
       // Phase 2: Create Customers
-     // await this.phase2CreateCustomers(customers);
+      //await this.phase2CreateCustomers(customers);
 
       // Phase 3: Create Products
       await this.phase3CreateProducts(products);
 
+     
+
       // Phase 4: Create Orders
-     //817564 await this.phase4CreateOrders(orders, detailOrders);
+     await this.phase4CreateOrders(orders, detailOrders);
 
       // Complete
       this.state.phase = 'complete';

@@ -93,7 +93,15 @@ interface MigrationState {
 const logger = pino(
   {
     level: process.env.LOG_LEVEL || 'info',
-  }
+    transport: {
+      target: 'pino-pretty',
+      options: {
+        colorize: true,
+        translateTime: 'SYS:standard',
+      },
+    },
+  },
+  pino.destination('./migration/logs.jsonl')
 );
 
 // ============================================================================
@@ -152,9 +160,25 @@ function loadState(): MigrationState {
   ensureStateDir();
   if (fs.existsSync(STATE_FILE)) {
     const data = fs.readFileSync(STATE_FILE, 'utf-8');
-    return JSON.parse(data);
+    
+    // Check if file is empty or contains only whitespace
+    if (data.trim().length === 0) {
+      logger.warn('State file is empty, using default state');
+      return getDefaultState();
+    }
+    
+    try {
+      return JSON.parse(data);
+    } catch (error) {
+      logger.warn({ error: (error as Error).message }, 'Failed to parse state file, using default state');
+      return getDefaultState();
+    }
   }
 
+  return getDefaultState();
+}
+
+function getDefaultState(): MigrationState {
   return {
     phase: 'fetch',
     status: 'in-progress',
@@ -377,6 +401,15 @@ class KiotVietMigrator {
       this.state.statistics.orders.total = orders.length;
       saveState(this.state);
 
+      // Lưu dữ liệu customers vào file JSON để backup
+    //   try {
+    //     const customersPath = path.join(__dirname, 'data', 'customers.json');
+    //     fs.writeFileSync(customersPath, JSON.stringify(customers, null, 2));
+    //     logger.info({ path: customersPath, count: customers.length }, 'Đã lưu dữ liệu customers vào file');
+    //   } catch (error) {
+    //     logger.warn({ error: (error as Error).message }, 'Không thể lưu file customers.json');
+    //   }
+
       logger.info(
         {
           orders: orders.length,
@@ -411,9 +444,10 @@ class KiotVietMigrator {
         if (existing) {
           logger.warn(
             { lemydeId: customer.customer_id, phone: customer.phone },
-            'Customer phone already exists in KiotViet - STOPPING'
+            'Customer phone already exists in KiotViet -'
           );
-          throw new Error(`Duplicate phone: ${customer.phone}`);
+          continue;
+          //throw new Error(`Duplicate phone: ${customer.phone}`);
         }
 
         // Create customer with branchId
@@ -459,32 +493,45 @@ class KiotVietMigrator {
     return match ? match[0] : `P${Date.now()}`;
   }
 
-  async phase3CreateProducts(products: LemydeProduct[]): Promise<void> {
+async phase3CreateProducts(products: LemydeProduct[]): Promise<void> {
+    logger.info('Starting product creation');
     try {
       logger.info('============ PHASE 3: CREATE PRODUCTS ============');
       this.state.phase = 'create-products';
       saveState(this.state);
 
       for (const product of products) {
-        // Check if code exists
-        const code = `P${String(product.product_id).padStart(6, '0')}`;
-        const existing = await this.kiotviet.products.getByCode(code);
-
-        if (existing) {
-          logger.warn(
-            { lemydeId: product.product_id, code },
-            'Product code already exists in KiotViet - STOPPING'
-          );
-          throw new Error(`Duplicate product code: ${code}`);
+        const code = `LY${String(product.product_id).padStart(6, '0')}`;
+        
+        // Check if product already exists in KiotViet
+        let existingProduct = null;
+        try {
+          existingProduct = await this.kiotviet.products.getByCode(code);
+        } catch (error) {
+          // Product not found, we'll create it
+          existingProduct = null;
         }
 
-        // Create product without categoryId (optional in KiotViet SDK)
+        if (existingProduct) {
+          logger.warn(
+            { lemydeId: product.product_id, code, kiotvietId: existingProduct.id },
+            'Product already exists in KiotViet - SKIPPING CREATION'
+          );
+          
+          // Update mapping with existing product
+          this.state.mappings.products[product.product_id] = existingProduct.id;
+          saveState(this.state);
+          continue;
+        }
+
+        // Create product with default category
         const createdProduct = await this.kiotviet.products.create({
           name: product.name,
           code,
           basePrice: product.cost_price,
           description: product.introduction || '',
           unit: 'Cái',
+          categoryId: 1477260, // Default category "Gia dụng"
         });
 
         this.state.mappings.products[product.product_id] = createdProduct.id;
@@ -512,6 +559,7 @@ class KiotVietMigrator {
     }
   }
 
+
   // =========================================================================
   // PHASE 4: CREATE ORDERS
   // =========================================================================
@@ -524,8 +572,12 @@ class KiotVietMigrator {
       logger.info('============ PHASE 4: CREATE ORDERS ============');
       this.state.phase = 'create-orders';
       saveState(this.state);
-
+      var test=0
       for (const order of orders) {
+        test+=1
+        if(test>3){
+          break
+        }
         try {
           // Check if customer exists in mapping
           const kiotvietCustomerId = this.state.mappings.customers[order.customer_id];
@@ -640,14 +692,19 @@ class KiotVietMigrator {
       // Phase 1: Fetch
       const { orders, detailOrders, customers, products } = await this.phase1Fetch();
 
-      // Phase 2: Create Customers
-      await this.phase2CreateCustomers(customers);
 
+
+
+      // Phase 2: Create Customers
+      //await this.phase2CreateCustomers(customers);
+       
       // Phase 3: Create Products
-      await this.phase3CreateProducts(products);
+     // await this.phase3CreateProducts(products);
+     // return
+     
 
       // Phase 4: Create Orders
-      await this.phase4CreateOrders(orders, detailOrders);
+     await this.phase4CreateOrders(orders, detailOrders);
 
       // Complete
       this.state.phase = 'complete';
@@ -666,6 +723,7 @@ class KiotVietMigrator {
       console.log('\n✅ Migration successful!');
       console.log(`State saved to: ${STATE_FILE}`);
     } catch (error) {
+         logger.error('--- lỗi gì');
       const err = error as Error;
       logger.error({ error: err.message, stack: err.stack }, 'Migration failed');
 
@@ -674,7 +732,7 @@ class KiotVietMigrator {
       console.error(`State saved to: ${STATE_FILE}`);
       console.error('Run migration again after fixing the error.');
 
-      process.exit(1);
+       //setTimeout(() => process.exit(1), 100);
     }
   }
 }
@@ -695,9 +753,10 @@ async function main() {
 }
 
 main().catch((error) => {
-  console.error('UNHANDLED ERROR:', error);
-  console.error('Message:', error?.message);
-  console.error('Stack:', error?.stack);
-  logger.error(error, 'Unhandled error');
-  process.exit(1);
+  logger.error({ 
+    error: error.message, 
+    stack: error.stack,
+    name: error.name 
+  }, 'Unhandled error');
+  //process.exit(1);
 });
