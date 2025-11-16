@@ -19,6 +19,10 @@
   },
   "scripts": {
     "dev": "node server.js",
-    "start": "node server.js"
+    "start": "node server.js",
+    "search:orders": "tsx search_orders.ts",
+    "search:orders:code": "tsx search_orders.ts code",
+    "search:orders:id": "tsx search_orders.ts id",
+    "search:orders:all": "tsx search_orders.ts all"
   }
 }

@@ -221,21 +221,68 @@ app.post('/api/migrate-order', async (req: Request, res: Response) => {
       const customerSql = `SELECT name, phone, address FROM crm.customers WHERE id = ${customerId}`;
       const [customerData] = await lemydeQuery<any>(customerSql);
 
-      const createdCustomer = await kiotvietClient.customers.create({
-        name: customerData.name,
-        code: `LY${String(customerId).padStart(6, '0')}`,
-        contactNumber: customerData.phone,
-        address: customerData.address || '',
-        branchId,
-      });
+      const customerCode = `LY${String(customerId).padStart(6, '0')}`;
+      
+      try {
+        const createdCustomer = await kiotvietClient.customers.create({
+          name: customerData.name,
+          code: customerCode,
+          contactNumber: customerData.phone,
+          address: customerData.address || '',
+          branchId,
+        });
 
-      console.log('***--- createdCustomer', createdCustomer.id);
+        console.log('***--- createdCustomer FULL RESPONSE:', JSON.stringify(createdCustomer, null, 2));
+        
+        // Xử lý cả hai trường hợp: response trực tiếp hoặc response có data wrapper
+        let kiotvietCustomerId: number;
+        
+        // Kiểm tra nếu response có cấu trúc { message: "...", data: { id: ... } }
+        if ('data' in createdCustomer && createdCustomer.data && typeof createdCustomer.data === 'object' && 'id' in createdCustomer.data) {
+          // Response có data wrapper
+          kiotvietCustomerId = (createdCustomer.data as any).id;
+          console.log('***--- createdCustomer ID (from data wrapper):', kiotvietCustomerId);
+        } else if ('id' in createdCustomer) {
+          // Response trực tiếp: { id: ... } (theo type definition)
+          kiotvietCustomerId = (createdCustomer as any).id;
+          console.log('***--- createdCustomer ID (direct):', kiotvietCustomerId);
+        } else {
+          throw new Error('Cannot find customer ID in response: ' + JSON.stringify(createdCustomer));
+        }
 
-      mapping.customers[customerId] = createdCustomer.id;
+        mapping.customers[customerId] = kiotvietCustomerId;
+        saveMapping(mapping); // Lưu mapping ngay sau khi tạo customer
+        
+      } catch (error: any) {
+        // Nếu lỗi "Mã khách hàng đã tồn tại", tìm customer đã có và lấy ID
+        if (error.errorMessage?.includes('Mã khách hàng') && error.errorMessage?.includes('đã tồn tại')) {
+          console.log(`⚠️  Customer ${customerCode} đã tồn tại, đang tìm kiếm...`);
+          
+          // Tìm customer bằng code
+          const existingCustomers = await kiotvietClient.customers.list({
+            code: customerCode,
+            pageSize: 1
+          });
+          
+          if (existingCustomers?.data && existingCustomers.data.length > 0) {
+            const existingCustomer = existingCustomers.data[0];
+            console.log(`✅ Đã tìm thấy customer tồn tại: ID = ${existingCustomer.id}`);
+            
+            mapping.customers[customerId] = existingCustomer.id;
+            saveMapping(mapping);
+          } else {
+            console.error('❌ Không tìm thấy customer đã tồn tại với code:', customerCode);
+            throw error;
+          }
+        } else {
+          // Nếu là lỗi khác, throw lại
+          throw error;
+        }
+      }
     }
 
     const kiotvietCustomerId = mapping.customers[customerId];
-
+     
     // 2. Migrate products if needed
     for (const detail of orderDetails) {
       if (!mapping.products[detail.product_id]) {
@@ -266,11 +313,34 @@ app.post('/api/migrate-order', async (req: Request, res: Response) => {
             console.warn(`Product ${code} error, skipping...`);
             continue;
           }
-          throw productError;
+          
+          // Nếu lỗi "đã tồn tại", tìm product đã có và lấy ID
+          if (productError.errorMessage?.includes('đã tồn tại')) {
+            console.log(`⚠️  Product ${code} đã tồn tại, đang tìm kiếm...`);
+            
+            // Tìm product bằng code
+            const existingProducts = await kiotvietClient.products.list({
+              code: code,
+              pageSize: 1
+            });
+            
+            if (existingProducts?.data && existingProducts.data.length > 0) {
+              const existingProduct = existingProducts.data[0];
+              console.log(`✅ Đã tìm thấy product tồn tại: ID = ${existingProduct.id}`);
+              
+              mapping.products[detail.product_id] = existingProduct.id;
+            } else {
+              console.error('❌ Không tìm thấy product đã tồn tại với code:', code);
+              throw productError;
+            }
+          } else {
+            // Nếu là lỗi khác, throw lại
+            throw productError;
+          }
         }
       }
     }
-
+    
     // 3. Create order
     const transformedDetails = orderDetails.map((detail: any, index: number) => ({
       productId: mapping.products[detail.product_id],
