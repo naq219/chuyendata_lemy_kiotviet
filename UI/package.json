@@ -1,0 +1,9 @@
+{
+  "scripts": {
+    "server": "ts-node server.ts",
+    "dev": "nodemon --exec ts-node server.ts"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19"
+  }
+}

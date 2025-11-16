@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lemyde to KiotViet Data Transfer</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .controls {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+        .btn-success {
+            background-color: #28a745;
+            color: white;
+        }
+        .btn-warning {
+            background-color: #ffc107;
+            color: black;
+        }
+        .btn-danger {
+            background-color: #dc3545;
+            color: white;
+        }
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .status {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+            text-align: center;
+        }
+        .status.loading {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        .status.success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .status.error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+        .mapping-info {
+            background-color: #e8f5e8;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="container">
+            <h1>Chuyển Dữ Liệu Lemyde → KiotViet</h1>
+            
+            <div class="controls">
+                <button class="btn-primary" @click="fetchData" :disabled="loading">
+                    {{ loading ? 'Đang tải...' : 'Tải Dữ Liệu' }}
+                </button>
+            </div>
+
+            <div v-if="loading" class="status loading">
+                Đang tải dữ liệu từ Lemyde...
+            </div>
+
+            <div v-if="error" class="status error">
+                Lỗi: {{ error }}
+            </div>
+
+            <div v-if="successMessage" class="status success">
+                {{ successMessage }}
+            </div>
+
+            <div v-if="orders.length > 0">
+                <h2>Danh Sách Orders ({{ orders.length }} orders)</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Order ID</th>
+                            <th>Khách Hàng</th>
+                            <th>SĐT</th>
+                            <th>Ngày Tạo</th>
+                            <th>Tổng Tiền</th>
+                            <th>Trạng Thái</th>
+                            <th>Thao Tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="order in orders" :key="order.order_id">
+                            <td>{{ order.order_id }}</td>
+                            <td>{{ order.customer_name }}</td>
+                            <td>{{ order.customer_phone }}</td>
+                            <td>{{ formatDate(order.date_created) }}</td>
+                            <td>{{ formatCurrency(order.total_amount) }}</td>
+                            <td>
+                                <span v-if="getKiotVietOrderId(order.order_id)" class="mapping-info">
+                                    ✅ Đã chuyển (KiotViet ID: {{ getKiotVietOrderId(order.order_id) }})
+                                </span>
+                                <span v-else style="color: #dc3545;">
+                                    ❌ Chưa chuyển
+                                </span>
+                            </td>
+                            <td>
+                                <button 
+                                    class="btn-success" 
+                                    @click="transferOrder(order)"
+                                    :disabled="!!getKiotVietOrderId(order.order_id) || transferringOrderId === order.order_id"
+                                >
+                                    {{ transferringOrderId === order.order_id ? 'Đang chuyển...' : 'Chuyển Sang KiotViet' }}
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div v-else-if="!loading">
+                <p style="text-align: center; color: #666;">
+                    Chưa có dữ liệu orders. Nhấn "Tải Dữ Liệu" để bắt đầu.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script defer>
+        // Đợi Vue tải hoàn toàn trước khi sử dụng
+        if (typeof Vue !== 'undefined') {
+            const { createApp, ref, onMounted } = Vue;
+
+        createApp({
+            setup() {
+                const orders = ref([]);
+                const loading = ref(false);
+                const error = ref('');
+                const successMessage = ref('');
+                const transferringOrderId = ref(null);
+                const orderMappings = ref({});
+
+                // Format currency
+                const formatCurrency = (amount) => {
+                    return new Intl.NumberFormat('vi-VN', {
+                        style: 'currency',
+                        currency: 'VND'
+                    }).format(amount);
+                };
+
+                // Format date
+                const formatDate = (dateString) => {
+                    return new Date(dateString).toLocaleDateString('vi-VN');
+                };
+
+                // Load order mappings from JSON file
+                const loadOrderMappings = async () => {
+                    try {
+                        const response = await fetch('/api/mappings');
+                        if (response.ok) {
+                            const data = await response.json();
+                            orderMappings.value = data.mappings || {};
+                        }
+                    } catch (err) {
+                        console.warn('Không thể tải mapping:', err);
+                    }
+                };
+
+                // Get KiotViet order ID from mapping
+                const getKiotVietOrderId = (lemydeOrderId) => {
+                    return orderMappings.value[lemydeOrderId] || null;
+                };
+
+                // Fetch data from Lemyde (similar to phase1Fetch)
+                const fetchData = async () => {
+                    loading.value = true;
+                    error.value = '';
+                    successMessage.value = '';
+
+                    try {
+                        // Gọi API endpoint để lấy dữ liệu từ Lemyde
+                        const response = await fetch('/api/lemyde/orders');
+                        
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+
+                        const data = await response.json();
+                        orders.value = data.orders || [];
+                        
+                        // Đồng thời load mapping mới nhất
+                        await loadOrderMappings();
+                        
+                        successMessage.value = `Đã tải thành công ${orders.value.length} orders từ Lemyde`;
+                        
+                    } catch (err) {
+                        error.value = `Lỗi khi tải dữ liệu: ${err.message}`;
+                        console.error('Fetch error:', err);
+                    } finally {
+                        loading.value = false;
+                    }
+                };
+
+                // Transfer single order to KiotViet
+                const transferOrder = async (order) => {
+                    transferringOrderId.value = order.order_id;
+                    error.value = '';
+
+                    try {
+                        const response = await fetch('/api/transfer/order', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                orderId: order.order_id
+                            })
+                        });
+
+                        if (!response.ok) {
+                            const errorData = await response.json();
+                            throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+                        }
+
+                        const result = await response.json();
+                        
+                        // Cập nhật mapping local
+                        orderMappings.value[order.order_id] = result.kiotvietOrderId;
+                        
+                        // Lưu mapping vào file (thông qua API)
+                        await fetch('/api/mappings/save', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({mappings: orderMappings.value})
+                        });
+
+                        successMessage.value = `✅ Đã chuyển order ${order.order_id} thành công sang KiotViet (ID: ${result.kiotvietOrderId})`;
+                        
+                    } catch (err) {
+                        error.value = `Lỗi khi chuyển order ${order.order_id}: ${err.message}`;
+                        console.error('Transfer error:', err);
+                    } finally {
+                        transferringOrderId.value = null;
+                    }
+                };
+
+                // Load mappings khi component mounted
+                onMounted(() => {
+                    loadOrderMappings();
+                });
+
+                return {
+                    orders,
+                    loading,
+                    error,
+                    successMessage,
+                    transferringOrderId,
+                    orderMappings,
+                    fetchData,
+                    transferOrder,
+                    getKiotVietOrderId,
+                    formatCurrency,
+                    formatDate
+                };
+            }
+        }).mount('#app');
+        } else {
+            console.error('Vue.js chưa được tải. Vui lòng kiểm tra CDN link.');
+        }
+    </script>
+</body>
+</html>
