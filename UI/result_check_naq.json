@@ -1,23 +1,20 @@
 {
-  "phase": "fetch",
-  "status": "success",
-  "startTime": "2025-11-14T03:05:40.343Z",
-  "statistics": {
-    "customers": {
-      "total": 81,
-      "created": 81
-    },
-    "products": {
-      "total": 164,
-      "created": 164
-    },
-    "orders": {
-      "total": 82,
-      "created": 12,
-      "failed": 9
-    }
+  "total": {
+    "customers": 79,
+    "products": 164,
+    "orders": 9
   },
-  "mappings": {
+  "valid": {
+    "customers": 79,
+    "products": 164,
+    "orders": 9
+  },
+  "invalid": {
+    "customers": [],
+    "products": [],
+    "orders": []
+  },
+  "cleanedMapping": {
     "customers": {
       "169": 4111761,
       "201": 4111762,
@@ -265,7 +262,7 @@
       "10500": 7577918,
       "10501": 7577919
     },
-    "createdOrders": {
+    "orders": {
       "82504": {
         "kiotvietOrderId": 3226365,
         "kiotvietOrderCode": "DH000016",
@@ -312,9 +309,5 @@
         "createdAt": "2025-11-14T15:57:27.878Z"
       }
     }
-  },
-  "lastError": {
-    
-  },
-  "endTime": "2025-11-14T17:08:12.223Z"
+  }
 }

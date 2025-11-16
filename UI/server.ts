@@ -19,6 +19,16 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
 
+// import validateMappingRouter from './routes/validate_mapping';
+// import setKiotVietClient from './routes/validate_mapping';
+// import { setKiotVietClient,validateMappingRouter } from './routes/validate_mapping';
+
+import { createValidateRouter } from './validate_mapping';
+
+
+
+
+
 // ============================================================================
 // CONSTANTS & CONFIG
 // ============================================================================
@@ -182,6 +192,9 @@ const kiotvietClient = new KiotVietClient({
   retailerName: process.env.KIOTVIET_RETAILER_NAME!,
 });
 
+const validateRouter = createValidateRouter(kiotvietClient);
+app.use( validateRouter);
+
 let branchId = 1;
 
 async function initBranchId() {
@@ -204,6 +217,7 @@ app.post('/api/migrate-order', async (req: Request, res: Response) => {
 
     // 1. Migrate customer if needed
     if (!mapping.customers[customerId]) {
+      console.log('***** chưa có customerId', customerId);
       const customerSql = `SELECT name, phone, address FROM crm.customers WHERE id = ${customerId}`;
       const [customerData] = await lemydeQuery<any>(customerSql);
 
@@ -215,6 +229,8 @@ app.post('/api/migrate-order', async (req: Request, res: Response) => {
         branchId,
       });
 
+      console.log('***--- createdCustomer', createdCustomer.id);
+
       mapping.customers[customerId] = createdCustomer.id;
     }
 
@@ -223,6 +239,7 @@ app.post('/api/migrate-order', async (req: Request, res: Response) => {
     // 2. Migrate products if needed
     for (const detail of orderDetails) {
       if (!mapping.products[detail.product_id]) {
+        console.log('***** chưa có productId', detail.product_id);
         const productSql = `SELECT name, cost_price, retail_price, introduction FROM crm.products WHERE id = ${detail.product_id}`;
         const [productData] = await lemydeQuery<any>(productSql);
 
@@ -238,8 +255,12 @@ app.post('/api/migrate-order', async (req: Request, res: Response) => {
             categoryId: 1477260,
           });
 
+          console.log('***--- createdProduct', createdProduct.id);
+
           mapping.products[detail.product_id] = createdProduct.id;
         } catch (productError: any) {
+          console.error(`Product ${code} error:`, productError.message);
+
           // If product already exists, try to find it
           if (productError.message?.includes('ProductId: 0')) {
             console.warn(`Product ${code} error, skipping...`);
@@ -270,6 +291,8 @@ app.post('/api/migrate-order', async (req: Request, res: Response) => {
       discount: 0,
     });
 
+    console.log('***--- createdOrder', createdOrder.id);
+
     mapping.orders[orderId] = {
       kiotvietId: createdOrder.id,
       kiotvietCode: createdOrder.code,
@@ -286,6 +309,7 @@ app.post('/api/migrate-order', async (req: Request, res: Response) => {
       },
     });
   } catch (error) {
+    console.error('Migration error:', error);
     const err = error as Error;
     console.error('Migration error:', err);
     res.status(500).json({ success: false, error: err.message });

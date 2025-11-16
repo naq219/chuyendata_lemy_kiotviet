@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Validate Mapping</title>
+  <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f5f5f5;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      padding: 30px;
+    }
+
+    h1 {
+      color: #333;
+      margin-bottom: 30px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 30px;
+    }
+
+    button {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: bold;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: #4CAF50;
+      color: white;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: #45a049;
+      transform: translateY(-2px);
+    }
+
+    .btn-primary:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+
+    .btn-secondary {
+      background: #2196F3;
+      color: white;
+    }
+
+    .btn-secondary:hover {
+      background: #0b7dda;
+    }
+
+    .loading {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid #f3f3f3;
+      border-top: 2px solid #4CAF50;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-right: 8px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .status-box {
+      background: #f9f9f9;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    .summary-item {
+      text-align: center;
+      padding: 15px;
+      background: white;
+      border: 1px solid #eee;
+      border-radius: 4px;
+    }
+
+    .summary-value {
+      font-size: 24px;
+      font-weight: bold;
+      color: #4CAF50;
+    }
+
+    .summary-label {
+      font-size: 12px;
+      color: #666;
+      margin-top: 5px;
+    }
+
+    .summary-item.invalid .summary-value {
+      color: #f44336;
+    }
+
+    .tables-container {
+      display: grid;
+      gap: 20px;
+    }
+
+    .table-section {
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .table-header {
+      background: #f5f5f5;
+      padding: 15px;
+      font-weight: bold;
+      border-bottom: 2px solid #ddd;
+    }
+
+    .table-body {
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    .table-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 2fr;
+      padding: 12px 15px;
+      border-bottom: 1px solid #eee;
+      font-size: 12px;
+      align-items: center;
+    }
+
+    .table-row:last-child {
+      border-bottom: none;
+    }
+
+    .table-row.error {
+      background: #ffebee;
+    }
+
+    .error-message {
+      background: #fff3cd;
+      border: 1px solid #ffc107;
+      border-radius: 4px;
+      padding: 12px 15px;
+      margin-bottom: 20px;
+      color: #856404;
+    }
+
+    .success-message {
+      background: #d4edda;
+      border: 1px solid #28a745;
+      border-radius: 4px;
+      padding: 12px 15px;
+      margin-bottom: 20px;
+      color: #155724;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px;
+      color: #999;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 6px;
+      background: #e0e0e0;
+      border-radius: 3px;
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: #4CAF50;
+      transition: width 0.3s;
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div class="container">
+      <h1>🔍 Validate & Recover Mapping</h1>
+
+      <div class="button-group">
+        <button class="btn-primary" @click="validateMapping" :disabled="loading">
+          <span v-if="loading" class="loading"></span>
+          {{ loading ? 'Đang validate...' : '▶️ Validate File' }}
+        </button>
+        <button class="btn-secondary" @click="downloadCleanedMapping" :disabled="!result">
+          💾 Tải Cleaned Mapping
+        </button>
+      </div>
+
+      <div v-if="error" class="error-message">
+        ❌ {{ error }}
+      </div>
+
+      <div v-if="result" class="status-box">
+        <div v-if="result.message" class="success-message">
+          ✅ {{ result.message }}
+        </div>
+
+        <div class="progress-bar">
+          <div class="progress-fill" :style="{ width: progressPercent + '%' }"></div>
+        </div>
+
+        <h3>📊 Kết Quả Validate</h3>
+
+        <div class="summary">
+          <div class="summary-item">
+            <div class="summary-label">👥 CUSTOMERS</div>
+            <div class="summary-value">{{ result.result.valid.customers }}/{{ result.result.total.customers }}</div>
+            <div class="summary-label">Valid</div>
+          </div>
+          <div class="summary-item">
+            <div class="summary-label">📦 PRODUCTS</div>
+            <div class="summary-value">{{ result.result.valid.products }}/{{ result.result.total.products }}</div>
+            <div class="summary-label">Valid</div>
+          </div>
+          <div class="summary-item">
+            <div class="summary-label">🛒 ORDERS</div>
+            <div class="summary-value">{{ result.result.valid.orders }}/{{ result.result.total.orders }}</div>
+            <div class="summary-label">Valid</div>
+          </div>
+          <div class="summary-item invalid" v-if="totalInvalid > 0">
+            <div class="summary-label">⚠️ INVALID</div>
+            <div class="summary-value">{{ totalInvalid }}</div>
+            <div class="summary-label">Deleted</div>
+          </div>
+        </div>
+
+        <div class="tables-container">
+          <!-- Invalid Customers -->
+          <div v-if="result.result.invalid.customers.length > 0" class="table-section">
+            <div class="table-header">
+              ❌ Invalid Customers ({{ result.result.invalid.customers.length }})
+            </div>
+            <div class="table-body">
+              <div v-for="item in result.result.invalid.customers" :key="item.id" class="table-row error">
+                <div>Lemyde ID: {{ item.id }}</div>
+                <div>KiotViet ID: {{ item.kiotvietId }}</div>
+                <div>{{ item.reason }}</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Invalid Products -->
+          <div v-if="result.result.invalid.products.length > 0" class="table-section">
+            <div class="table-header">
+              ❌ Invalid Products ({{ result.result.invalid.products.length }})
+            </div>
+            <div class="table-body">
+              <div v-for="item in result.result.invalid.products" :key="item.id" class="table-row error">
+                <div>Lemyde ID: {{ item.id }}</div>
+                <div>KiotViet ID: {{ item.kiotvietId }}</div>
+                <div>{{ item.reason }}</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Invalid Orders -->
+          <div v-if="result.result.invalid.orders.length > 0" class="table-section">
+            <div class="table-header">
+              ❌ Invalid Orders ({{ result.result.invalid.orders.length }})
+            </div>
+            <div class="table-body">
+              <div v-for="item in result.result.invalid.orders" :key="item.id" class="table-row error">
+                <div>Lemyde ID: {{ item.id }}</div>
+                <div>KiotViet ID: {{ item.kiotvietId }}</div>
+                <div>{{ item.reason }}</div>
+              </div>
+            </div>
+          </div>
+
+          <div v-if="result.result.invalid.customers.length === 0 && result.result.invalid.products.length === 0 && result.result.invalid.orders.length === 0" class="empty-state">
+            ✅ Tất cả mapping đều hợp lệ!
+          </div>
+        </div>
+      </div>
+
+      <div v-else class="empty-state">
+        📋 Nhấp nút "Validate File" để kiểm tra mapping
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const { createApp } = Vue;
+
+    createApp({
+      data() {
+        return {
+          result: null,
+          loading: false,
+          error: null,
+        };
+      },
+
+      computed: {
+        totalInvalid() {
+          if (!this.result?.result) return 0;
+          return (
+            this.result.result.invalid.customers.length +
+            this.result.result.invalid.products.length +
+            this.result.result.invalid.orders.length
+          );
+        },
+        progressPercent() {
+          if (!this.result?.result) return 0;
+          const total = 
+            this.result.result.total.customers +
+            this.result.result.total.products +
+            this.result.result.total.orders;
+          const valid =
+            this.result.result.valid.customers +
+            this.result.result.valid.products +
+            this.result.result.valid.orders;
+          return total === 0 ? 0 : Math.round((valid / total) * 100);
+        },
+      },
+
+      methods: {
+        async validateMapping() {
+          this.loading = true;
+          this.error = null;
+
+          try {
+            const response = await fetch('http://localhost:3000/api/validate-mapping', {
+              method: 'POST',
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+              this.result = data;
+            } else {
+              this.error = data.error;
+            }
+          } catch (error) {
+            this.error = 'Lỗi kết nối: ' + error.message;
+          } finally {
+            this.loading = false;
+          }
+        },
+
+        downloadCleanedMapping() {
+          if (!this.result?.result?.cleanedMapping) return;
+
+          const dataStr = JSON.stringify(this.result.result.cleanedMapping, null, 2);
+          const blob = new Blob([dataStr], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `cleaned_mapping_${new Date().getTime()}.json`;
+          link.click();
+        },
+      },
+    }).mount('#app');
+  </script>
+</body>
+</html>
