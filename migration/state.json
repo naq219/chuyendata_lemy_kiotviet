@@ -1,6 +1,6 @@
 {
-  "phase": "create-orders",
-  "status": "failed",
+  "phase": "fetch",
+  "status": "success",
   "startTime": "2025-11-14T03:05:40.343Z",
   "statistics": {
     "customers": {
@@ -13,8 +13,8 @@
     },
     "orders": {
       "total": 82,
-      "created": 3,
-      "failed": 1
+      "created": 12,
+      "failed": 9
     }
   },
   "mappings": {
@@ -264,13 +264,60 @@
       "10499": 7577917,
       "10500": 7577918,
       "10501": 7577919
+    },
+    "createdOrders": {
+      "82504": {
+        "kiotvietOrderId": 3226365,
+        "kiotvietOrderCode": "DH000016",
+        "createdAt": "2025-11-14T17:08:12.222Z"
+      },
+      "82505": {
+        "kiotvietOrderId": 3226363,
+        "kiotvietOrderCode": "DH000015",
+        "createdAt": "2025-11-14T17:08:11.586Z"
+      },
+      "82508": {
+        "kiotvietOrderId": 3226243,
+        "kiotvietOrderCode": "DH000014",
+        "createdAt": "2025-11-14T16:40:00.836Z"
+      },
+      "82509": {
+        "kiotvietOrderId": 3226238,
+        "kiotvietOrderCode": "DH000012",
+        "createdAt": "2025-11-14T16:36:33.843Z"
+      },
+      "82510": {
+        "kiotvietOrderId": 3226237,
+        "kiotvietOrderCode": "DH000011",
+        "createdAt": "2025-11-14T16:36:33.265Z"
+      },
+      "82511": {
+        "kiotvietOrderId": 3226242,
+        "kiotvietOrderCode": "DH000013",
+        "createdAt": "2025-11-14T16:40:00.270Z"
+      },
+      "82512": {
+        "kiotvietOrderId": 3226214,
+        "kiotvietOrderCode": "DH000010",
+        "createdAt": "2025-11-14T16:18:44.835Z"
+      },
+      "82513": {
+        "kiotvietOrderId": 3226188,
+        "kiotvietOrderCode": "DH000009",
+        "createdAt": "2025-11-14T15:57:28.468Z"
+      },
+      "82514": {
+        "kiotvietOrderId": 3226187,
+        "kiotvietOrderCode": "DH000008",
+        "createdAt": "2025-11-14T15:57:27.878Z"
+      }
     }
   },
   "lastError": {
     "phase": "create-orders",
-    "message": "Hàng hóa: P010366 không hợp lệ",
-    "detail": "KiotVietApiError: Hàng hóa: P010366 không hợp lệ\n    at ErrorHandler.handleRequestError (C:\\Users\\legion\\Desktop\\002\\chuyen_datalemy\\node_modules\\kiotviet-client-sdk\\dist\\services\\error-handler.js:24:27)\n    at InterceptorService.<anonymous> (C:\\Users\\legion\\Desktop\\002\\chuyen_datalemy\\node_modules\\kiotviet-client-sdk\\dist\\services\\interceptor-service.js:42:64)\n    at Generator.next (<anonymous>)\n    at C:\\Users\\legion\\Desktop\\002\\chuyen_datalemy\\node_modules\\kiotviet-client-sdk\\dist\\services\\interceptor-service.js:8:71\n    at new Promise (<anonymous>)\n    at __awaiter (C:\\Users\\legion\\Desktop\\002\\chuyen_datalemy\\node_modules\\kiotviet-client-sdk\\dist\\services\\interceptor-service.js:4:12)\n    at C:\\Users\\legion\\Desktop\\002\\chuyen_datalemy\\node_modules\\kiotviet-client-sdk\\dist\\services\\interceptor-service.js:41:85\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at async Axios.request (C:\\Users\\legion\\Desktop\\002\\chuyen_datalemy\\node_modules\\axios\\lib\\core\\Axios.js:40:14)\n    at Axios.request (C:\\Users\\legion\\Desktop\\002\\chuyen_datalemy\\node_modules\\axios\\lib\\core\\Axios.js:45:41)\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)",
-    "timestamp": "2025-11-14T15:34:46.853Z"
+    "message": "Mã hàng hóa P010470/7439632 Id hàng hóa bị trùng lặp.",
+    "detail": "KiotVietApiError: Mã hàng hóa P010470/7439632 Id hàng hóa bị trùng lặp.\n    at ErrorHandler.handleRequestError (C:\\Users\\legion\\Desktop\\002\\chuyen_datalemy\\node_modules\\kiotviet-client-sdk\\dist\\services\\error-handler.js:24:27)\n    at InterceptorService.<anonymous> (C:\\Users\\legion\\Desktop\\002\\chuyen_datalemy\\node_modules\\kiotviet-client-sdk\\dist\\services\\interceptor-service.js:42:64)\n    at Generator.next (<anonymous>)\n    at C:\\Users\\legion\\Desktop\\002\\chuyen_datalemy\\node_modules\\kiotviet-client-sdk\\dist\\services\\interceptor-service.js:8:71\n    at new Promise (<anonymous>)\n    at __awaiter (C:\\Users\\legion\\Desktop\\002\\chuyen_datalemy\\node_modules\\kiotviet-client-sdk\\dist\\services\\interceptor-service.js:4:12)\n    at C:\\Users\\legion\\Desktop\\002\\chuyen_datalemy\\node_modules\\kiotviet-client-sdk\\dist\\services\\interceptor-service.js:41:85\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at async Axios.request (C:\\Users\\legion\\Desktop\\002\\chuyen_datalemy\\node_modules\\axios\\lib\\core\\Axios.js:40:14)\n    at Axios.request (C:\\Users\\legion\\Desktop\\002\\chuyen_datalemy\\node_modules\\axios\\lib\\core\\Axios.js:45:41)\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)",
+    "timestamp": "2025-11-14T16:18:44.977Z"
   },
-  "endTime": "2025-11-14T08:58:38.982Z"
+  "endTime": "2025-11-14T17:08:12.223Z"
 }

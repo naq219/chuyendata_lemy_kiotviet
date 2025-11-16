@@ -14,10 +14,10 @@ class KiotVietOrderLister {
 
   constructor() {
     this.client = new KiotVietClient({
-      clientId: process.env.KIOTVIET_CLIENT_ID!,
-      clientSecret: process.env.KIOTVIET_CLIENT_SECRET!,
-      retailer: process.env.KIOTVIET_RETAILER!,
-    });
+    clientId: process.env.KIOTVIET_CLIENT_ID!,
+    clientSecret: process.env.KIOTVIET_CLIENT_SECRET!,
+    retailerName: process.env.KIOTVIET_RETAILER_NAME!,
+  });
   }
 
   async listAllOrders() {

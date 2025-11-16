@@ -1,0 +1,184 @@
+import { KiotVietClient } from 'kiotviet-client-sdk';
+import * as dotenv from 'dotenv';
+import pino from 'pino';
+
+dotenv.config();
+
+// Logger setup
+const logger = pino({
+  level: process.env.LOG_LEVEL || 'info',
+  transport: {
+    target: 'pino-pretty',
+    options: {
+      colorize: true,
+      translateTime: 'SYS:standard',
+    },
+  },
+});
+
+const client = new KiotVietClient({
+  clientId: process.env.KIOTVIET_CLIENT_ID!,
+  clientSecret: process.env.KIOTVIET_CLIENT_SECRET!,
+  retailerName: process.env.KIOTVIET_RETAILER_NAME!,
+});
+
+/**
+ * Tìm product bằng mã code
+ */
+async function findProductByCode(code: string) {
+  try {
+    logger.info({ code }, 'Bat dau tim product theo ma code');
+    
+    const product = await client.products.getByCode(code);
+    
+    if (product) {
+      logger.info(
+        { 
+          code, 
+          productId: product.id, 
+          productName: product.name,
+          price: product.price,
+          status: product.status
+        }, 
+        'Da tim thay product'
+      );
+      
+      console.log('\n✅ Product found:');
+      console.log(`ID: ${product.id}`);
+      console.log(`Code: ${product.code}`);
+      console.log(`Name: ${product.name}`);
+      console.log(`Price: ${product.price?.toLocaleString('vi-VN')} VND`);
+      console.log(`Status: ${product.status}`);
+      console.log(`Category: ${product.categoryName}`);
+      
+      return product;
+    } else {
+      logger.warn({ code }, 'Khong tim thay product');
+      console.log('\n❌ Product not found');
+      return null;
+    }
+    
+  } catch (error) {
+    logger.error(
+      { code, error: (error as Error).message }, 
+      'Loi khi tim product'
+    );
+    console.log('\n❌ Error finding product:', (error as Error).message);
+    return null;
+  }
+}
+
+/**
+ * Tìm product bằng tên (tìm kiếm gần đúng)
+ */
+async function findProductByName(name: string) {
+  try {
+    logger.info({ name }, 'Bat dau tim product theo ten');
+    
+    const response = await client.products.list({ 
+      productName: name,
+      pageSize: 10
+    });
+    
+    if (response.data && response.data.length > 0) {
+      logger.info(
+        { name, count: response.data.length }, 
+        'Da tim thay products'
+      );
+      
+      console.log(`\n✅ Found ${response.data.length} products:`);
+      response.data.forEach((product, index) => {
+        console.log(`\n${index + 1}. ${product.name}`);
+        console.log(`   ID: ${product.id}`);
+        console.log(`   Code: ${product.code}`);
+        console.log(`   Price: ${product.price?.toLocaleString('vi-VN')} VND`);
+        console.log(`   Status: ${product.status}`);
+      });
+      
+      return response.data;
+    } else {
+      logger.warn({ name }, 'Khong tim thay product theo ten');
+      console.log('\n❌ No products found with that name');
+      return [];
+    }
+    
+  } catch (error) {
+    logger.error(
+      { name, error: (error as Error).message }, 
+      'Loi khi tim product theo ten'
+    );
+    console.log('\n❌ Error searching products:', (error as Error).message);
+    return [];
+  }
+}
+
+/**
+ * Hiển thị chi tiết product
+ */
+function displayProductDetails(product: any) {
+  console.log('\n📦 Product Details:');
+  console.log('====================');
+  console.log(`ID: ${product.id}`);
+  console.log(`Code: ${product.code}`);
+  console.log(`Name: ${product.name}`);
+  console.log(`Description: ${product.description || 'N/A'}`);
+  console.log(`Price: ${product.price?.toLocaleString('vi-VN')} VND`);
+  console.log(`Cost Price: ${product.costPrice?.toLocaleString('vi-VN')} VND`);
+  console.log(`Status: ${product.status}`);
+  console.log(`Category: ${product.categoryName || 'N/A'}`);
+  console.log(`Unit: ${product.unit || 'N/A'}`);
+  console.log(`Weight: ${product.weight || 'N/A'} kg`);
+  console.log(`Inventory: ${product.inventory || 0}`);
+  console.log(`Allow Sale: ${product.allowSale ? 'Yes' : 'No'}`);
+  console.log(`Created: ${product.createdDate}`);
+  console.log(`Modified: ${product.modifiedDate}`);
+}
+
+// Main function
+async function main() {
+  let args = process.argv.slice(2);
+  
+  // Nếu có '--' trong arguments, bỏ qua nó và lấy các argument sau
+  if (args.includes('--')) {
+    const dashIndex = args.indexOf('--');
+    args = args.slice(dashIndex + 1);
+  }
+  
+  if (args.length === 0) {
+    console.log('Usage:');
+    console.log('  npm run find-product -- code <product-code>');
+    console.log('  npm run find-product -- name <product-name>');
+    return;
+  }
+  
+  const command = args[0];
+  const value = args[1];
+  
+  if (!value) {
+    console.log('Please provide a search value');
+    return;
+  }
+  
+  try {
+    if (command === 'code') {
+      const product = await findProductByCode(value);
+      if (product) {
+        displayProductDetails(product);
+      }
+    } else if (command === 'name') {
+      await findProductByName(value);
+    } else {
+      console.log('Invalid command. Use "code" or "name"');
+    }
+    
+  } catch (error) {
+    console.error('Unexpected error:', (error as Error).message);
+  }
+}
+
+// Run if called directly
+if (require.main === module) {
+  main().catch(console.error);
+}
+
+export { findProductByCode, findProductByName, displayProductDetails };

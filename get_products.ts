@@ -27,14 +27,14 @@ const client = new KiotVietClient({
  */
 async function getAllProducts() {
   try {
-    logger.info('Bắt đầu lấy danh sách products từ KiotViet...');
+    logger.info('Bat dau lay danh sach products tu KiotViet...');
     
     let allProducts: any[] = [];
     let currentPage = 1;
     const pageSize = 100; // Lấy tối đa 100 sản phẩm mỗi trang
     
     while (true) {
-      logger.info(`Đang lấy trang ${currentPage}...`);
+      logger.info(`Dang lay trang ${currentPage}...`);
       
       const response = await client.products.list({
         pageSize,
@@ -42,12 +42,12 @@ async function getAllProducts() {
       });
       
       if (!response.data || response.data.length === 0) {
-        logger.info('Đã lấy hết tất cả products');
+        logger.info('Da lay het tat ca products');
         break;
       }
       
       allProducts = [...allProducts, ...response.data];
-      logger.info(`Đã lấy được ${response.data.length} products, tổng: ${allProducts.length}`);
+      logger.info(`Da lay duoc ${response.data.length} products, tong: ${allProducts.length}`);
       
       // Nếu số lượng trả về ít hơn pageSize, có nghĩa là đã hết
       if (response.data.length < pageSize) {
@@ -73,7 +73,7 @@ async function getAllProducts() {
  */
 async function getProductsByCode(codes: string[]) {
   try {
-    logger.info({ codes }, 'Bắt đầu lấy products theo mã code...');
+    logger.info({ codes }, 'Bat dau lay products theo ma code...');
     
     const products = [];
     
@@ -81,7 +81,7 @@ async function getProductsByCode(codes: string[]) {
       try {
         const product = await client.products.getByCode(code);
         products.push(product);
-        logger.info({ code, productId: product.id }, 'Đã tìm thấy product');
+        logger.info({ code, productId: product.id }, 'Da tim thay product');
       } catch (error) {
         logger.warn({ code, error: (error as Error).message }, 'Không tìm thấy product');
       }

@@ -824,14 +824,15 @@ async phase3CreateProducts(products: LemydeProduct[]): Promise<void> {
       
       // Lưu các ID vào file JSON
       this.saveIdsToJson({ orders, detailOrders, customers, products });
-     
+      
+      return 
 
 
       // Phase 2: Create Customers
-      await this.phase2CreateCustomers(customers);
+      //await this.phase2CreateCustomers(customers);
        
       // Phase 3: Create Products
-      await this.phase3CreateProducts(products);
+     // await this.phase3CreateProducts(products);
      // return
      
 

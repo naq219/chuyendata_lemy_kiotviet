@@ -59,7 +59,7 @@ async function getProductsWithSaleDisabled() {
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
     
-    logger.info(`Tổng cộng ${allProducts.length} products đang không cho phép bán`);
+    logger.info(`Tong cong ${allProducts.length} products dang khong cho phep ban`);
     return allProducts;
     
   } catch (error) {
