@@ -26,10 +26,11 @@ class KiotVietOrderLister {
       
       let allOrders: any[] = [];
       let currentPage = 1;
-      const pageSize = 100;
+      const pageSize = 1;
       let hasMore = true;
 
       while (hasMore) {
+        hasMore=false
         console.log(`📄 Đang lấy trang ${currentPage}...`);
         
         const response = await this.client.orders.list({
