@@ -403,7 +403,7 @@ app.post('/api/migrate-order', async (req: Request, res: Response) => {
       discount: 0,
       discountRatio: 0,
     }));
-    let description = 'DHM' + (orderId ?? '') + ' ' + (note ?? '') + ' ' + (note_xuatkho ?? '');
+    let description = 'DHM' + (orderId ?? '') + '. ' + (note ?? '') + ' ' + (note_xuatkho ?? '');
 
     const createdOrder = await kiotvietClient.orders.create({
       branchId,
