@@ -427,6 +427,9 @@ app.post('/api/migrate-order', async (req: Request, res: Response) => {
     }));
     let description = 'DHM' + (orderId ?? '') + '. ' + (note ?? '') + ' ' + (note_xuatkho ?? '');
 
+    // Tạo custom code cho order: DHM + orderId (ví dụ: DHM12345)
+    const customOrderCode = `DHM${orderId}`;
+    
     const createdOrder = await kiotvietClient.orders.create({
       branchId,
       customerId: kiotvietCustomerId,
