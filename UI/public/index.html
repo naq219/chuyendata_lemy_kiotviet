@@ -366,10 +366,10 @@
 
           <div class="order-products" v-if="order.products">
             <strong>🛍️ Sản phẩm ({{ order.products.length }}):</strong>
-            <div class="product-item" v-for="p in order.products.slice(0, 3)" :key="p.product_id">
+            <div class="product-item" v-for="p in order.products" :key="p.product_id">
               • {{ p.product_name }} x{{ p.quantity }} - {{ formatCurrency(p.gia_ban) }}
             </div>
-            <div class="product-item" v-if="order.products.length > 3">
+            <div class="product-item" v-if="order.products.length > 38">
               • ... và {{ order.products.length - 3 }} sản phẩm khác
             </div>
           </div>

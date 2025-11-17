@@ -56,7 +56,12 @@ function ensureDataDir() {
 function loadMapping(): MigrationMapping {
   ensureDataDir();
   if (fs.existsSync(MAPPING_FILE)) {
-    return JSON.parse(fs.readFileSync(MAPPING_FILE, 'utf-8'));
+    const mapping = JSON.parse(fs.readFileSync(MAPPING_FILE, 'utf-8'));
+    // Đảm bảo object mapping luôn có các properties cần thiết
+    if (!mapping.orders) mapping.orders = {};
+    if (!mapping.customers) mapping.customers = {};
+    if (!mapping.products) mapping.products = {};
+    return mapping;
   }
   return { customers: {}, products: {}, orders: {} };
 }
@@ -392,16 +397,33 @@ app.post('/api/migrate-order', async (req: Request, res: Response) => {
       }
     }
     
-    // 3. Create order
-    const transformedDetails = orderDetails.map((detail: any, index: number) => ({
-      productId: mapping.products[detail.product_id],
-      productCode: `LY${String(detail.product_id).padStart(6, '0')}`,
-      productName: detail.product_name,
-      quantity: detail.quantity,
-      price: detail.gia_ban,
+    // 3. Create order - Gộp các detail orders có cùng product_id
+    const productMap = new Map();
+    
+    orderDetails.forEach((detail: any) => {
+      const productKey = detail.product_id;
+      if (productMap.has(productKey)) {
+        // Nếu đã có product này, cộng dồn quantity
+        const existing = productMap.get(productKey);
+        existing.quantity += detail.quantity;
+      } else {
+        // Nếu chưa có, thêm mới vào map
+        productMap.set(productKey, {
+          productId: mapping.products[detail.product_id],
+          productCode: `MY${String(detail.product_id).padStart(6, '0')}`,
+          productName: detail.product_name,
+          quantity: detail.quantity,
+          price: detail.gia_ban,
+          discount: 0,
+          discountRatio: 0,
+        });
+      }
+    });
+    
+    // Chuyển từ Map sang array và set isMaster cho item đầu tiên
+    const transformedDetails = Array.from(productMap.values()).map((detail, index) => ({
+      ...detail,
       isMaster: index === 0,
-      discount: 0,
-      discountRatio: 0,
     }));
     let description = 'DHM' + (orderId ?? '') + '. ' + (note ?? '') + ' ' + (note_xuatkho ?? '');
 

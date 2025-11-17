@@ -35,6 +35,7 @@
     "8208": 4111784,
     "8325": 4111785,
     "8335": 4111786,
+    "8342": 4228727,
     "8472": 4111788,
     "8486": 4111789,
     "8696": 4111790,
@@ -96,7 +97,9 @@
     "16360": 4170861,
     "16361": 4170779,
     "16362": 4170708,
-    "16364": 4174649
+    "16364": 4174649,
+    "16365": 4228738,
+    "16366": 4228737
   },
   "products": {
     "232": 7869488,
@@ -270,6 +273,85 @@
     "10505": 7852889,
     "10506": 7869627,
     "10507": 7851759,
-    "10508": 7864037
+    "10508": 7864037,
+    "10511": 8177098
+  },
+  "orders": {
+    "82513": {
+      "kiotvietId": 3241143,
+      "kiotvietCode": "DH000138"
+    },
+    "82514": {
+      "kiotvietId": 3241140,
+      "kiotvietCode": "DH000137"
+    },
+    "82515": {
+      "kiotvietId": 3241139,
+      "kiotvietCode": "DH000136"
+    },
+    "82517": {
+      "kiotvietId": 3241138,
+      "kiotvietCode": "DH000135"
+    },
+    "82518": {
+      "kiotvietId": 3241137,
+      "kiotvietCode": "DH000134"
+    },
+    "82519": {
+      "kiotvietId": 3241132,
+      "kiotvietCode": "DH000133"
+    },
+    "82520": {
+      "kiotvietId": 3241131,
+      "kiotvietCode": "DH000132"
+    },
+    "82521": {
+      "kiotvietId": 3241130,
+      "kiotvietCode": "DH000131"
+    },
+    "82522": {
+      "kiotvietId": 3241129,
+      "kiotvietCode": "DH000130"
+    },
+    "82523": {
+      "kiotvietId": 3241128,
+      "kiotvietCode": "DH000129"
+    },
+    "82524": {
+      "kiotvietId": 3241127,
+      "kiotvietCode": "DH000128"
+    },
+    "82525": {
+      "kiotvietId": 3241126,
+      "kiotvietCode": "DH000127"
+    },
+    "82526": {
+      "kiotvietId": 3241125,
+      "kiotvietCode": "DH000126"
+    },
+    "82527": {
+      "kiotvietId": 3241124,
+      "kiotvietCode": "DH000125"
+    },
+    "82530": {
+      "kiotvietId": 3241123,
+      "kiotvietCode": "DH000124"
+    },
+    "82538": {
+      "kiotvietId": 3241122,
+      "kiotvietCode": "DH000123"
+    },
+    "82541": {
+      "kiotvietId": 3241020,
+      "kiotvietCode": "DH000122"
+    },
+    "82542": {
+      "kiotvietId": 3241019,
+      "kiotvietCode": "DH000121"
+    },
+    "82543": {
+      "kiotvietId": 3241014,
+      "kiotvietCode": "DH000120"
+    }
   }
 }
