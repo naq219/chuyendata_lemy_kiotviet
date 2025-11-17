@@ -202,6 +202,7 @@ async function main() {
     console.log('Usage:');
     console.log('  npm run find-product -- code <product-code>');
     console.log('  npm run find-product -- name <product-name>');
+    console.log('  npm run find-product -- id <product-id>');
     console.log('  npm run find-product -- all [page] [pageSize]');
     return;
   }
@@ -224,12 +225,22 @@ async function main() {
       }
     } else if (command === 'name') {
       await findProductByName(value);
+    } else if (command === 'id') {
+      const productId = parseInt(value);
+      if (isNaN(productId)) {
+        console.log('❌ Product ID must be a number');
+        return;
+      }
+      const product = await findProductById(productId);
+      if (product) {
+        displayProductDetails(product);
+      }
     } else if (command === 'all') {
       const page = args[1] ? parseInt(args[1]) : 1;
       const pageSize = args[2] ? parseInt(args[2]) : 100;
       await getAllProducts(page, pageSize);
     } else {
-      console.log('Invalid command. Use "code", "name", or "all"');
+      console.log('Invalid command. Use "code", "name", "id", or "all"');
     }
     
   } catch (error) {
@@ -240,6 +251,52 @@ async function main() {
 // Run if called directly
 if (require.main === module) {
   main().catch(console.error);
+}
+
+/**
+ * Tìm product bằng ID
+ */
+async function findProductById(id: number) {
+  try {
+    logger.info({ id }, 'Bat dau tim product theo ID');
+    
+    const product = await client.products.getById(id);
+    
+    if (product) {
+      logger.info(
+        { 
+          id, 
+          productCode: product.code, 
+          productName: product.name,
+          price: product.price,
+          status: product.status
+        }, 
+        'Da tim thay product theo ID'
+      );
+      
+      console.log('\n✅ Product found by ID:');
+      console.log(`ID: ${product.id}`);
+      console.log(`Code: ${product.code}`);
+      console.log(`Name: ${product.name}`);
+      console.log(`Price: ${product.price?.toLocaleString('vi-VN')} VND`);
+      console.log(`Status: ${product.status}`);
+      console.log(`Category: ${product.categoryName}`);
+      
+      return product;
+    } else {
+      logger.warn({ id }, 'Khong tim thay product theo ID');
+      console.log('\n❌ Product not found by ID');
+      return null;
+    }
+    
+  } catch (error) {
+    logger.error(
+      { id, error: (error as Error).message }, 
+      'Loi khi tim product theo ID'
+    );
+    console.log('\n❌ Error finding product by ID:', (error as Error).message);
+    return null;
+  }
 }
 
 export { findProductByCode, findProductByName, displayProductDetails };

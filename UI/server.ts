@@ -95,10 +95,17 @@ app.get('/api/orders', async (req: Request, res: Response) => {
         o.date_created,
         o.shop_id,
         o.note,
+        c.note_xuatkho,
         o.total_amount,
         c.name AS customer_name,
         c.phone AS customer_phone,
-        c.address AS customer_address
+        c.address AS customer_address,
+        (
+          SELECT JSON_ARRAYAGG(p.images) 
+          FROM crm.detail_orders do
+          JOIN crm.products p ON do.product_id = p.id
+          WHERE do.order_id = o.id
+        ) AS images
       FROM crm.orders o
       JOIN crm.customers c ON o.customer_id = c.id
       WHERE o.status = 1
@@ -108,7 +115,7 @@ app.get('/api/orders', async (req: Request, res: Response) => {
           JOIN crm.products p ON do.product_id = p.id
           WHERE p.name LIKE '%nck1%'
         )
-      ORDER BY o.id DESC limit 10
+      ORDER BY o.id DESC 
     `;
 
     const orders = await lemydeQuery<any>(sql);
@@ -213,7 +220,7 @@ initBranchId();
 
 app.post('/api/migrate-order', async (req: Request, res: Response) => {
   try {
-    const { orderId, customerId, orderDetails,shopId } = req.body;
+    const { orderId, customerId, orderDetails,shopId,note,note_xuatkho } = req.body;
     const mapping = loadMapping();
 
    
@@ -229,7 +236,9 @@ app.post('/api/migrate-order', async (req: Request, res: Response) => {
 
     // Lấy saleChannelId từ mapping, mặc định là 0 nếu không tìm thấy
     const saleChannelId = shopId ? shopChannelMapping[shopId] || 0 : 0;
-
+    if (!saleChannelId || saleChannelId === 0) {
+      return res.status(400).json({ success: false, error: 'Không tìm thấy shop ' });
+    }
     // 1. Migrate customer if needed
     if (!mapping.customers[customerId]) {
       console.log('***** chưa có customerId', customerId);
@@ -303,19 +312,38 @@ app.post('/api/migrate-order', async (req: Request, res: Response) => {
       if (!mapping.products[detail.product_id]) {
        
         console.log('***** chưa có productId', detail.product_id);
-        const productSql = `SELECT name, cost_price, retail_price, introduction FROM crm.products WHERE id = ${detail.product_id}`;
+        const productSql = `SELECT name, cost_price, retail_price, introduction, images FROM crm.products WHERE id = ${detail.product_id}`;
         const [productData] = await lemydeQuery<any>(productSql);
 
-        const code = `LY${String(detail.product_id).padStart(6, '0')}`;
+        const code = `MY${String(detail.product_id).padStart(6, '0')}`;
 
         try {
+          // Xử lý ảnh từ Lemyde
+          let kiotvietImages: string[] = [];
+          if (productData.images) {
+            try {
+              const images = JSON.parse(productData.images);
+              if (Array.isArray(images)) {
+                // Tạo URL đầy đủ cho từng ảnh
+                kiotvietImages = images.map((imageName: string) => 
+                  `https://files.lemyde.com/uploads/${imageName}`
+                );
+                console.log(`✅ Đã xử lý ${kiotvietImages.length} ảnh cho product ${detail.product_id}`);
+              }
+            } catch (parseError) {
+              console.warn(`⚠️  Lỗi parse images cho product ${detail.product_id}:`, productData.images);
+            }
+          }
+
           const createdProduct = await kiotvietClient.products.create({
           name: productData.name,
           code,
           basePrice: productData.retail_price, // Giá bán
           description: productData.introduction || '',
           unit: 'Cái',
+          allowsSale: true,
           categoryId: 1477260,
+          images: kiotvietImages, // Thêm ảnh vào product
           inventories: [
             {
               branchId: branchId,
@@ -375,6 +403,7 @@ app.post('/api/migrate-order', async (req: Request, res: Response) => {
       discount: 0,
       discountRatio: 0,
     }));
+    let description = 'DHM' + (orderId ?? '') + ' ' + (note ?? '') + ' ' + (note_xuatkho ?? '');
 
     const createdOrder = await kiotvietClient.orders.create({
       branchId,
@@ -382,6 +411,7 @@ app.post('/api/migrate-order', async (req: Request, res: Response) => {
       purchaseDate: new Date().toISOString(),
       orderDetails: transformedDetails,
       discount: 0,
+      description: description,
       saleChannelId: saleChannelId,
     });
 
