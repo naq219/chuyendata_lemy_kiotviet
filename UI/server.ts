@@ -93,6 +93,7 @@ app.get('/api/orders', async (req: Request, res: Response) => {
         o.id AS order_id,
         o.customer_id,
         o.date_created,
+        o.shop_id,
         o.note,
         o.total_amount,
         c.name AS customer_name,
@@ -107,7 +108,7 @@ app.get('/api/orders', async (req: Request, res: Response) => {
           JOIN crm.products p ON do.product_id = p.id
           WHERE p.name LIKE '%nck1%'
         )
-      ORDER BY o.id DESC
+      ORDER BY o.id DESC limit 10
     `;
 
     const orders = await lemydeQuery<any>(sql);
@@ -135,7 +136,7 @@ app.get('/api/order-details/:orderId', async (req: Request, res: Response) => {
       FROM crm.detail_orders do
       JOIN crm.products p ON do.product_id = p.id
       WHERE do.order_id = ${orderId}
-      ORDER BY do.id
+      ORDER BY do.id 
     `;
 
     const details = await lemydeQuery<any>(sql);
@@ -212,8 +213,22 @@ initBranchId();
 
 app.post('/api/migrate-order', async (req: Request, res: Response) => {
   try {
-    const { orderId, customerId, orderDetails } = req.body;
+    const { orderId, customerId, orderDetails,shopId } = req.body;
     const mapping = loadMapping();
+
+   
+
+    // Hard mapping shop_id từ Lemyde với saleChannelId của KiotViet
+    const shopChannelMapping: Record<number, number> = {
+      2: 228306,
+      4: 228300,
+      34: 229584,
+      3: 228304,
+      10: 228307
+    };
+
+    // Lấy saleChannelId từ mapping, mặc định là 0 nếu không tìm thấy
+    const saleChannelId = shopId ? shopChannelMapping[shopId] || 0 : 0;
 
     // 1. Migrate customer if needed
     if (!mapping.customers[customerId]) {
@@ -261,7 +276,7 @@ app.post('/api/migrate-order', async (req: Request, res: Response) => {
           // Tìm customer bằng code
           const existingCustomers = await kiotvietClient.customers.list({
             code: customerCode,
-            pageSize: 1
+            pageSize: 1000
           });
           
           if (existingCustomers?.data && existingCustomers.data.length > 0) {
@@ -286,6 +301,7 @@ app.post('/api/migrate-order', async (req: Request, res: Response) => {
     // 2. Migrate products if needed
     for (const detail of orderDetails) {
       if (!mapping.products[detail.product_id]) {
+       
         console.log('***** chưa có productId', detail.product_id);
         const productSql = `SELECT name, cost_price, retail_price, introduction FROM crm.products WHERE id = ${detail.product_id}`;
         const [productData] = await lemydeQuery<any>(productSql);
@@ -294,13 +310,20 @@ app.post('/api/migrate-order', async (req: Request, res: Response) => {
 
         try {
           const createdProduct = await kiotvietClient.products.create({
-            name: productData.name,
-            code,
-            basePrice: productData.cost_price,
-            description: productData.introduction || '',
-            unit: 'Cái',
-            categoryId: 1477260,
-          });
+          name: productData.name,
+          code,
+          basePrice: productData.retail_price, // Giá bán
+          description: productData.introduction || '',
+          unit: 'Cái',
+          categoryId: 1477260,
+          inventories: [
+            {
+              branchId: branchId,
+              cost: productData.cost_price, // Giá vốn
+              onHand: 0
+            }
+          ]
+        });
 
           console.log('***--- createdProduct', createdProduct.id);
 
@@ -321,7 +344,7 @@ app.post('/api/migrate-order', async (req: Request, res: Response) => {
             // Tìm product bằng code
             const existingProducts = await kiotvietClient.products.list({
               code: code,
-              pageSize: 1
+              pageSize: 1000
             });
             
             if (existingProducts?.data && existingProducts.data.length > 0) {
@@ -359,6 +382,7 @@ app.post('/api/migrate-order', async (req: Request, res: Response) => {
       purchaseDate: new Date().toISOString(),
       orderDetails: transformedDetails,
       discount: 0,
+      saleChannelId: saleChannelId,
     });
 
     console.log('***--- createdOrder', createdOrder.id);

@@ -69,6 +69,55 @@ async function findProductByCode(code: string) {
 }
 
 /**
+ * Lấy tất cả sản phẩm (có phân trang)
+ */
+async function getAllProducts(page: number = 1, pageSize: number = 100) {
+  try {
+    logger.info({ page, pageSize }, 'Bat dau lay danh sach tat ca san pham');
+    
+    const response = await client.products.list({ 
+      pageSize,
+      currentItem: (page - 1) * pageSize
+    });
+    
+    if (response.data && response.data.length > 0) {
+      logger.info(
+        { page, pageSize, count: response.data.length }, 
+        'Da lay duoc danh sach san pham'
+      );
+      
+      console.log(`\n✅ Found ${response.data.length} products (Page ${page}):`);
+      response.data.forEach((product, index) => {
+        console.log(`\n${index + 1}. ${product.name}`);
+        console.log(`   ID: ${product.id}`);
+        console.log(`   Code: ${product.code}`);
+        console.log(`   Price: ${product.price?.toLocaleString('vi-VN')} VND`);
+        console.log(`   Status: ${product.status}`);
+      });
+      
+      // Hiển thị thông tin phân trang
+      if (response.paging) {
+        console.log(`\n📄 Page Info: ${response.paging.currentItem}-${response.paging.currentItem + response.data.length} of ${response.paging.total}`);
+      }
+      
+      return response;
+    } else {
+      logger.warn({ page, pageSize }, 'Khong co san pham nao');
+      console.log('\n❌ No products found');
+      return null;
+    }
+    
+  } catch (error) {
+    logger.error(
+      { page, pageSize, error: (error as Error).message }, 
+      'Loi khi lay danh sach san pham'
+    );
+    console.log('\n❌ Error getting products:', (error as Error).message);
+    return null;
+  }
+}
+
+/**
  * Tìm product bằng tên (tìm kiếm gần đúng)
  */
 async function findProductByName(name: string) {
@@ -138,26 +187,34 @@ function displayProductDetails(product: any) {
 async function main() {
   let args = process.argv.slice(2);
   
-  // Nếu có '--' trong arguments, bỏ qua nó và lấy các argument sau
+  // Khi chạy qua npm run, arguments sẽ có dạng: ['find-product', '--', 'all']
+  // Cần lọc bỏ '--' và các phần không cần thiết
   if (args.includes('--')) {
     const dashIndex = args.indexOf('--');
     args = args.slice(dashIndex + 1);
+  } else {
+    // Nếu không có '--', có thể đang chạy trực tiếp với tsx
+    // Giữ nguyên arguments
+    args = args.filter(arg => arg !== 'find-product');
   }
   
   if (args.length === 0) {
     console.log('Usage:');
     console.log('  npm run find-product -- code <product-code>');
     console.log('  npm run find-product -- name <product-name>');
+    console.log('  npm run find-product -- all [page] [pageSize]');
     return;
   }
   
   const command = args[0];
-  const value = args[1];
   
-  if (!value) {
+  // Chỉ yêu cầu value cho các command cần tìm kiếm
+  if (command !== 'all' && args.length < 2) {
     console.log('Please provide a search value');
     return;
   }
+  
+  const value = args[1];
   
   try {
     if (command === 'code') {
@@ -167,8 +224,12 @@ async function main() {
       }
     } else if (command === 'name') {
       await findProductByName(value);
+    } else if (command === 'all') {
+      const page = args[1] ? parseInt(args[1]) : 1;
+      const pageSize = args[2] ? parseInt(args[2]) : 100;
+      await getAllProducts(page, pageSize);
     } else {
-      console.log('Invalid command. Use "code" or "name"');
+      console.log('Invalid command. Use "code", "name", or "all"');
     }
     
   } catch (error) {

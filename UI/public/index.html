@@ -451,13 +451,20 @@
                 products: [],
               }));
 
+              // Load existing mapping first to check which orders are already migrated
+              await this.loadMapping();
+
               // Load products for each order
               for (const order of this.orders) {
                 await this.loadOrderProducts(order);
+                
+                // Check if order is already in mapping
+                if (this.mapping.orders && this.mapping.orders[order.order_id]) {
+                  order.migrated = true;
+                  order.status = 'success';
+                  order.kiotvietOrderCode = this.mapping.orders[order.order_id].kiotvietOrderCode;
+                }
               }
-
-              // Load existing mapping
-              await this.loadMapping();
             } else {
               alert('Lỗi: ' + result.error);
             }
@@ -493,6 +500,7 @@
                 orderId: order.order_id,
                 customerId: order.customer_id,
                 orderDetails: order.products,
+                shopId: order.shop_id,
               }),
             });
 

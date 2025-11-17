@@ -23,6 +23,7 @@
     "search:orders": "tsx search_orders.ts",
     "search:orders:code": "tsx search_orders.ts code",
     "search:orders:id": "tsx search_orders.ts id",
-    "search:orders:all": "tsx search_orders.ts all"
+    "search:orders:all": "tsx search_orders.ts all",
+    "find-product": "tsx find_product.ts"
   }
 }
