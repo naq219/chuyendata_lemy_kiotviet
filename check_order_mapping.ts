@@ -141,7 +141,7 @@ function filterLemydeOrders(orders: OrderWithDetails[]): OrderWithDetails[] {
 }
 
 function loadMigrationMapping(): MigrationMapping {
-    const mappingPath = path.join(__dirname, 'UI', 'data', 'migration_mapping.json');
+    const mappingPath = path.join(process.cwd(), 'UI', 'data', 'migration_mapping.json');
     
     if (!fs.existsSync(mappingPath)) {
         throw new Error(`Migration mapping file not found at: ${mappingPath}`);
