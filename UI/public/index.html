@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>KiotViet Migration - UI</title>
+  <title>KiotViet Migration Tool</title>
   <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.js"></script>
   <style>
     * {
@@ -51,15 +51,17 @@
     }
 
     .stat-value {
-      font-size: 24px;
-      font-weight: bold;
-      color: #4CAF50;
+      font-size: 1em;
+      
+      font-style: italic;
+      margin: 1.5em;
     }
 
     .stat-label {
-      font-size: 12px;
+      font-size: 14px;
       color: #666;
       margin-top: 5px;
+      font-weight: 500;
     }
 
     .orders-list {
@@ -147,6 +149,7 @@
     .order-detail-label {
       font-weight: bold;
       color: #333;
+      font-size: 14px;
     }
 
     .order-products {
@@ -256,8 +259,28 @@
 
     .controls {
       margin: 20px 0;
+    }
+
+    .search-row {
       display: flex;
       gap: 10px;
+      margin-bottom: 10px;
+      align-items: center;
+    }
+
+    .search-input {
+      padding: 12px 16px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      flex: 1;
+      min-width: 0;
+      font-size: 16px;
+    }
+
+    .button-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
     }
 
     .btn-primary {
@@ -322,25 +345,12 @@
 <body>
   <div id="app">
     <div class="container">
-      <h1>🔄 KiotViet Migration Tool</h1>
+      <h2>🔄 KiotViet Migration Tool</h2>
       
-      <div class="header-stats">
-        <div class="stat">
-          <div class="stat-value">{{ totalOrders }}</div>
-          <div class="stat-label">Tổng Đơn Hàng</div>
-        </div>
-        <div class="stat">
-          <div class="stat-value">{{ migratedCount }}</div>
-          <div class="stat-label">Đã Migrate</div>
-        </div>
-        <div class="stat">
-          <div class="stat-value">{{ failedCount }}</div>
-          <div class="stat-label">Lỗi</div>
-        </div>
-        <div class="stat">
-          <div class="stat-value">{{ progressPercent }}%</div>
-          <div class="stat-label" @click="unlockButtons" style="cursor: pointer;">Tiến Độ</div>
-        </div>
+      <div class="header-stats1">
+        
+          <span class="stat-value">Tổng Đơn: {{ totalOrders }} -  Đã chuyển Kiotviet: {{ migratedCount }} </span>
+        
       </div>
 
       <div class="progress-bar">
@@ -348,28 +358,30 @@
       </div>
 
       <div class="controls">
-        <div style="display: flex; gap: 10px; align-items: center;">
+        <div class="search-row">
           <input 
             v-model="searchOrderIds" 
             placeholder="Nhập order ID (ví dụ: 22323,443434,22223)"
-            style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; min-width: 300px;"
+            class="search-input"
             @keyup.enter="searchOrders"
           >
           <button class="btn-primary" @click="searchOrders" :disabled="loading">
             <span v-if="loading" class="loading-spinner"></span>
-            🔍 Tìm Kiếm
+            🔍 Tìm
           </button>
         </div>
-        <button class="btn-primary" @click="loadOrders" :disabled="loading">
-          <span v-if="loading" class="loading-spinner"></span>
-          {{ loading ? 'Đang tải...' : '🔄 Tải Đơn Hàng (Theo Name)' }}
-        </button>
-        <button class="btn-secondary" @click="showFacebookInfo = !showFacebookInfo" :class="{ active: showFacebookInfo }">
-          {{ showFacebookInfo ? '🙈 Ẩn Facebook' : '👤 Hiện Facebook' }}
-        </button>
-        <button class="btn-primary" @click="downloadMapping" v-if="buttonsUnlocked">
-          💾 Tải Mapping JSON
-        </button>
+        <div class="button-row">
+          <button class="btn-primary" @click="loadOrders" :disabled="loading">
+            <span v-if="loading" class="loading-spinner"></span>
+            {{ loading ? 'Đang tải...' : '🔄 MGS' }}
+          </button>
+          <button class="btn-secondary" @click="showFacebookInfo = !showFacebookInfo" :class="{ active: showFacebookInfo }">
+            {{ showFacebookInfo ? '🙈 Ẩn FB' : '👤 Hiện FB' }}
+          </button>
+          <button class="btn-primary" @click="downloadMapping" v-if="buttonsUnlocked">
+            💾 Mapping
+          </button>
+        </div>
       </div>
 
       <div class="orders-list" v-if="orders.length > 0">
