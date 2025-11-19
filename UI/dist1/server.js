@@ -95,12 +95,7 @@ app.get('/api/orders', async (req, res) => {
             }
         }
         else {
-            whereCondition = `AND o.id IN (
-        SELECT DISTINCT do.order_id 
-        FROM crm.detail_orders do
-        JOIN crm.products p ON do.product_id = p.id
-        WHERE p.name LIKE '%nck1%'
-      )`;
+            whereCondition = '';
         }
         const sql = `
       SELECT 
@@ -114,7 +109,6 @@ app.get('/api/orders', async (req, res) => {
         c.name AS customer_name,
         c.phone AS customer_phone,
         c.address AS customer_address,
-        c.nick_facebook AS customer_facebook,
         (
           SELECT JSON_ARRAYAGG(p.images) 
           FROM crm.detail_orders do

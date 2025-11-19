@@ -163,6 +163,12 @@
       padding: 3px 0;
     }
 
+    .product-quantity {
+      font-weight: bold;
+      color: #e91e63;
+      font-size: 13px;
+    }
+
     .order-actions {
       display: flex;
       gap: 10px;
@@ -263,6 +269,22 @@
       background: #0b7dda;
     }
 
+    .btn-secondary {
+      background: #f1f1f1;
+      color: #333;
+      border: 1px solid #ddd;
+    }
+
+    .btn-secondary:hover {
+      background: #e5e5e5;
+    }
+
+    .btn-secondary.active {
+      background: #4CAF50;
+      color: white;
+      border-color: #4CAF50;
+    }
+
     .pagination {
       display: flex;
       justify-content: center;
@@ -326,9 +348,24 @@
       </div>
 
       <div class="controls">
+        <div style="display: flex; gap: 10px; align-items: center;">
+          <input 
+            v-model="searchOrderIds" 
+            placeholder="Nhập order ID (ví dụ: 22323,443434,22223)"
+            style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; min-width: 300px;"
+            @keyup.enter="searchOrders"
+          >
+          <button class="btn-primary" @click="searchOrders" :disabled="loading">
+            <span v-if="loading" class="loading-spinner"></span>
+            🔍 Tìm Kiếm
+          </button>
+        </div>
         <button class="btn-primary" @click="loadOrders" :disabled="loading">
           <span v-if="loading" class="loading-spinner"></span>
-          {{ loading ? 'Đang tải...' : '🔄 Tải Đơn Hàng' }}
+          {{ loading ? 'Đang tải...' : '🔄 Tải Đơn Hàng (Theo Name)' }}
+        </button>
+        <button class="btn-secondary" @click="showFacebookInfo = !showFacebookInfo" :class="{ active: showFacebookInfo }">
+          {{ showFacebookInfo ? '🙈 Ẩn Facebook' : '👤 Hiện Facebook' }}
         </button>
         <button class="btn-primary" @click="downloadMapping" v-if="buttonsUnlocked">
           💾 Tải Mapping JSON
@@ -353,6 +390,17 @@
             <div class="order-detail-item">
               <span class="order-detail-label">Khách Hàng:</span>
               {{ order.customer_name }} ({{ order.customer_phone }})
+              <span v-if="showFacebookInfo && order.customer_facebook" class="facebook-info">
+                - Facebook: {{ order.customer_facebook }}
+              </span>
+            </div>
+            <div class="order-detail-item">
+              <span class="order-detail-label">Địa Chỉ:</span>
+              {{ order.customer_address || 'Không có địa chỉ' }}
+            </div>
+            <div class="order-detail-item">
+              <span class="order-detail-label">Ghi Chú:</span>
+              {{ (order.note || '') + ' ' + (order.note_xuatkho || '') || 'Không có ghi chú' }}
             </div>
             <div class="order-detail-item">
               <span class="order-detail-label">Ngày Tạo:</span>
@@ -367,7 +415,7 @@
           <div class="order-products" v-if="order.products">
             <strong>🛍️ Sản phẩm ({{ order.products.length }}):</strong>
             <div class="product-item" v-for="p in order.products" :key="p.product_id">
-              • {{ p.product_name }} x{{ p.quantity }} - {{ formatCurrency(p.gia_ban) }}
+              • <span class="product-quantity">SL {{ p.quantity }}</span> - {{ p.product_name }} - {{ formatCurrency(p.gia_ban) }}
             </div>
             <div class="product-item" v-if="order.products.length > 38">
               • ... và {{ order.products.length - 3 }} sản phẩm khác
@@ -423,6 +471,9 @@
           mapping: { customers: {}, products: {}, orders: {} },
           buttonsUnlocked: false,
           unlockClickCount: 0,
+          searchOrderIds: '',
+          baseURL: 'https://s1.vq.id.vn/p3501',
+          showFacebookInfo: false,
         };
       },
 
@@ -447,7 +498,7 @@
         async loadOrders() {
           this.loading = true;
           try {
-            const response = await fetch('http://localhost:3000/api/orders');
+            const response = await fetch(`${this.baseURL}/api/orders`);
             const result = await response.json();
 
             if (result.success) {
@@ -480,13 +531,69 @@
           } catch (error) {
             alert('Lỗi kết nối: ' + error.message);
           } finally {
-            this.loading = false;
+          this.loading = false;
+        }
+      },
+
+      async searchOrders() {
+        if (!this.searchOrderIds.trim()) {
+          alert('Vui lòng nhập order ID để tìm kiếm');
+          return;
+        }
+
+        this.loading = true;
+        try {
+          // Chuyển đổi chuỗi order IDs thành mảng và làm sạch
+          const orderIds = this.searchOrderIds
+            .split(',')
+            .map(id => id.trim())
+            .filter(id => id.length > 0);
+
+          if (orderIds.length === 0) {
+            alert('Không có order ID hợp lệ');
+            return;
           }
-        },
+
+          const response = await fetch(`${this.baseURL}/api/orders?ids=${orderIds.join(',')}`);
+          const result = await response.json();
+
+          if (result.success) {
+            this.orders = result.data.map(o => ({
+              ...o,
+              status: 'pending',
+              migrated: false,
+              migrating: false,
+              error: null,
+              products: [],
+            }));
+
+            // Load existing mapping first to check which orders are already migrated
+            await this.loadMapping();
+
+            // Load products for each order
+            for (const order of this.orders) {
+              await this.loadOrderProducts(order);
+              
+              // Check if order is already in mapping
+              if (this.mapping.orders && this.mapping.orders[order.order_id]) {
+                order.migrated = true;
+                order.status = 'success';
+                order.kiotvietOrderCode = this.mapping.orders[order.order_id].kiotvietOrderCode;
+              }
+            }
+          } else {
+            alert('Lỗi: ' + result.error);
+          }
+        } catch (error) {
+          alert('Lỗi kết nối: ' + error.message);
+        } finally {
+          this.loading = false;
+        }
+      },
 
         async loadOrderProducts(order) {
           try {
-            const response = await fetch(`http://localhost:3000/api/order-details/${order.order_id}`);
+            const response = await fetch(`${this.baseURL}/api/order-details/${order.order_id}`);
             const result = await response.json();
             if (result.success) {
               order.products = result.data;
@@ -502,7 +609,7 @@
           order.error = null;
 
           try {
-            const response = await fetch('http://localhost:3000/api/migrate-order', {
+            const response = await fetch(`${this.baseURL}/api/migrate-order`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -539,7 +646,7 @@
 
         async loadMapping() {
           try {
-            const response = await fetch('http://localhost:3000/api/mapping');
+            const response = await fetch(`${this.baseURL}/api/mapping`);
             const result = await response.json();
             if (result.success) {
               this.mapping = result.data;

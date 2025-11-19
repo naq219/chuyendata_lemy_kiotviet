@@ -163,12 +163,6 @@
       padding: 3px 0;
     }
 
-    .product-quantity {
-      font-weight: bold;
-      color: #e91e63;
-      font-size: 13px;
-    }
-
     .order-actions {
       display: flex;
       gap: 10px;
@@ -269,22 +263,6 @@
       background: #0b7dda;
     }
 
-    .btn-secondary {
-      background: #f1f1f1;
-      color: #333;
-      border: 1px solid #ddd;
-    }
-
-    .btn-secondary:hover {
-      background: #e5e5e5;
-    }
-
-    .btn-secondary.active {
-      background: #4CAF50;
-      color: white;
-      border-color: #4CAF50;
-    }
-
     .pagination {
       display: flex;
       justify-content: center;
@@ -362,10 +340,7 @@
         </div>
         <button class="btn-primary" @click="loadOrders" :disabled="loading">
           <span v-if="loading" class="loading-spinner"></span>
-          {{ loading ? 'Đang tải...' : '🔄 Tải Đơn Hàng (Theo Name)' }}
-        </button>
-        <button class="btn-secondary" @click="showFacebookInfo = !showFacebookInfo" :class="{ active: showFacebookInfo }">
-          {{ showFacebookInfo ? '🙈 Ẩn Facebook' : '👤 Hiện Facebook' }}
+          {{ loading ? 'Đang tải...' : '🔄 Tải Đơn Hàng' }}
         </button>
         <button class="btn-primary" @click="downloadMapping" v-if="buttonsUnlocked">
           💾 Tải Mapping JSON
@@ -390,17 +365,6 @@
             <div class="order-detail-item">
               <span class="order-detail-label">Khách Hàng:</span>
               {{ order.customer_name }} ({{ order.customer_phone }})
-              <span v-if="showFacebookInfo && order.customer_facebook" class="facebook-info">
-                - Facebook: {{ order.customer_facebook }}
-              </span>
-            </div>
-            <div class="order-detail-item">
-              <span class="order-detail-label">Địa Chỉ:</span>
-              {{ order.customer_address || 'Không có địa chỉ' }}
-            </div>
-            <div class="order-detail-item">
-              <span class="order-detail-label">Ghi Chú:</span>
-              {{ (order.note || '') + ' ' + (order.note_xuatkho || '') || 'Không có ghi chú' }}
             </div>
             <div class="order-detail-item">
               <span class="order-detail-label">Ngày Tạo:</span>
@@ -415,7 +379,7 @@
           <div class="order-products" v-if="order.products">
             <strong>🛍️ Sản phẩm ({{ order.products.length }}):</strong>
             <div class="product-item" v-for="p in order.products" :key="p.product_id">
-              • <span class="product-quantity">SL {{ p.quantity }}</span> - {{ p.product_name }} - {{ formatCurrency(p.gia_ban) }}
+              • {{ p.product_name }} x{{ p.quantity }} - {{ formatCurrency(p.gia_ban) }}
             </div>
             <div class="product-item" v-if="order.products.length > 38">
               • ... và {{ order.products.length - 3 }} sản phẩm khác
@@ -472,8 +436,6 @@
           buttonsUnlocked: false,
           unlockClickCount: 0,
           searchOrderIds: '',
-          baseURL: 'https://s1.vq.id.vn/p3501',
-          showFacebookInfo: false,
         };
       },
 
@@ -498,7 +460,7 @@
         async loadOrders() {
           this.loading = true;
           try {
-            const response = await fetch(`${this.baseURL}/api/orders`);
+            const response = await fetch('http://localhost:3000/api/orders');
             const result = await response.json();
 
             if (result.success) {
@@ -554,7 +516,7 @@
             return;
           }
 
-          const response = await fetch(`${this.baseURL}/api/orders?ids=${orderIds.join(',')}`);
+          const response = await fetch(`http://localhost:3000/api/orders?ids=${orderIds.join(',')}`);
           const result = await response.json();
 
           if (result.success) {
@@ -593,7 +555,7 @@
 
         async loadOrderProducts(order) {
           try {
-            const response = await fetch(`${this.baseURL}/api/order-details/${order.order_id}`);
+            const response = await fetch(`http://localhost:3000/api/order-details/${order.order_id}`);
             const result = await response.json();
             if (result.success) {
               order.products = result.data;
@@ -609,7 +571,7 @@
           order.error = null;
 
           try {
-            const response = await fetch(`${this.baseURL}/api/migrate-order`, {
+            const response = await fetch('http://localhost:3000/api/migrate-order', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -646,7 +608,7 @@
 
         async loadMapping() {
           try {
-            const response = await fetch(`${this.baseURL}/api/mapping`);
+            const response = await fetch('http://localhost:3000/api/mapping');
             const result = await response.json();
             if (result.success) {
               this.mapping = result.data;

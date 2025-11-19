@@ -123,7 +123,6 @@ app.get('/api/orders', async (req: Request, res: Response) => {
         c.name AS customer_name,
         c.phone AS customer_phone,
         c.address AS customer_address,
-        c.nick_facebook AS customer_facebook,
         (
           SELECT JSON_ARRAYAGG(p.images) 
           FROM crm.detail_orders do
