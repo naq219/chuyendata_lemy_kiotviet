@@ -385,13 +385,13 @@ app.post('/api/migrate-order', async (req: Request, res: Response) => {
           // If product already exists, try to find it
           if (productError.message?.includes('ProductId: 0')) {
             console.warn(`Product ${code} error, skipping...`);
-            continue;
+           return res.status(500).json({ success: false, error: `Product ${code} - pp${detail.product_id} đã tồn tại` });
           }
           
           // Nếu lỗi "đã tồn tại", tìm product đã có và lấy ID
           if (productError.errorMessage?.includes('đã tồn tại')) {
             console.log(`⚠️  Product ${code} đã tồn tại, đang tìm kiếm...`);
-            
+            return res.status(500).json({ success: false, error: `Product ${code} đã tồn tại` });
             // Tìm product bằng code
             const existingProducts = await kiotvietClient.products.list({
               code: code,
@@ -401,9 +401,9 @@ app.post('/api/migrate-order', async (req: Request, res: Response) => {
             if (existingProducts?.data && existingProducts.data.length > 0) {
               const existingProduct = existingProducts.data[0];
               if (existingProduct?.id) {
-                console.log(`✅ Đã tìm thấy product tồn tại: ID = ${existingProduct.id}`);
+               // console.log(`✅ Đã tìm thấy product tồn tại: ID = ${existingProduct.id}`);
                 
-                mapping.products[detail.product_id] = existingProduct.id;
+               // mapping.products[detail.product_id] = existingProduct.id;
               } else {
               console.error('❌ Product tồn tại nhưng không có ID');
               return res.status(500).json({ success: false, error: 'Product tồn tại nhưng không có ID' });

@@ -106,7 +106,7 @@ async function updateMigrationMapping() {
     console.log('🔄 Bắt đầu cập nhật migration mapping...\n');
     
     // Đọc file mapping hiện tại
-    const mappingFilePath = path.join(__dirname, 'UI', 'data', 'migration_mapping.json');
+    const mappingFilePath = path.join(__dirname, 'UI', 'data', 'all_migration_mapping.json');
     let currentMapping: any = { customers: {}, products: {} };
     
     if (fs.existsSync(mappingFilePath)) {
