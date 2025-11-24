@@ -1,0 +1,100 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.lemydeQuery = lemydeQuery;
+exports.getCustomerById = getCustomerById;
+exports.getProductById = getProductById;
+exports.getOrders = getOrders;
+exports.getOrderDetails = getOrderDetails;
+const axios_1 = __importDefault(require("axios"));
+const constants_1 = require("../utils/constants");
+async function lemydeQuery(sql) {
+    const response = await axios_1.default.get(constants_1.LEMYDE_API_URL + '/get', {
+        params: { sql },
+    });
+    if (response.data.status !== 1 || !response.data.data) {
+        throw new Error(`Lemyde API error: ${JSON.stringify(response.data)}`);
+    }
+    return response.data.data;
+}
+async function getCustomerById(customerId) {
+    const sql = `
+    SELECT id AS customer_id, name, phone, address
+    FROM crm.customers
+    WHERE id = ${customerId}
+  `;
+    const [customer] = await lemydeQuery(sql);
+    return customer;
+}
+async function getProductById(productId) {
+    const sql = `
+    SELECT id AS product_id, name, cost_price, retail_price, introduction, images
+    FROM crm.products
+    WHERE id = ${productId}
+  `;
+    const [product] = await lemydeQuery(sql);
+    return product;
+}
+async function getOrders(orderIds) {
+    let whereCondition = '';
+    if (orderIds && orderIds.length > 0) {
+        const idsArray = orderIds.map(id => id.trim()).filter(id => id.length > 0);
+        if (idsArray.length > 0) {
+            whereCondition = `AND o.id IN (${idsArray.join(',')})`;
+        }
+    }
+    else {
+        whereCondition = `AND o.id IN (
+      SELECT DISTINCT do.order_id 
+      FROM crm.detail_orders do
+      JOIN crm.products p ON do.product_id = p.id
+      WHERE p.name LIKE '%nck1%'
+    )`;
+    }
+    const sql = `
+    SELECT 
+      o.id AS order_id,
+      o.customer_id,
+      o.date_created,
+      o.shop_id,
+      o.note,
+      c.note_xuatkho,
+      o.total_amount,
+      c.name AS customer_name,
+      c.phone AS customer_phone,
+      c.address AS customer_address,
+      c.nick_facebook AS customer_facebook,
+      (
+        SELECT JSON_ARRAYAGG(p.images) 
+        FROM crm.detail_orders do
+        JOIN crm.products p ON do.product_id = p.id
+        WHERE do.order_id = o.id
+      ) AS images
+    FROM crm.orders o
+    JOIN crm.customers c ON o.customer_id = c.id
+    WHERE o.status = 1
+      ${whereCondition}
+    ORDER BY o.id DESC 
+  `;
+    return await lemydeQuery(sql);
+}
+async function getOrderDetails(orderId) {
+    const sql = `
+    SELECT 
+      do.id AS detail_order_id,
+      do.product_id,
+      p.name AS product_name,
+      p.cost_price,
+      p.retail_price,
+      do.quantity,
+      do.gia_ban,
+      do.gia_nhap
+    FROM crm.detail_orders do
+    JOIN crm.products p ON do.product_id = p.id
+    WHERE do.order_id = ${orderId}
+    ORDER BY do.id 
+  `;
+    return await lemydeQuery(sql);
+}

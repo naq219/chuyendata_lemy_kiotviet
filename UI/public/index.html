@@ -5,377 +5,41 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>KiotViet Migration Tool</title>
   <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.js"></script>
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: #f5f5f5;
-      padding: 20px;
-    }
-
-    .container {
-      max-width: 1200px;
-      margin: 0 auto;
-      background: white;
-      border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-      padding: 30px;
-    }
-
-    h1 {
-      color: #333;
-      margin-bottom: 10px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .header-stats {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 15px;
-      margin: 20px 0;
-      padding: 20px;
-      background: #f9f9f9;
-      border-radius: 8px;
-      border-left: 4px solid #4CAF50;
-    }
-
-    .stat {
-      text-align: center;
-    }
-
-    .stat-value {
-      font-size: 1em;
-      
-      font-style: italic;
-      margin: 1.5em;
-    }
-
-    .stat-label {
-      font-size: 14px;
-      color: #666;
-      margin-top: 5px;
-      font-weight: 500;
-    }
-
-    .orders-list {
-      margin-top: 30px;
-    }
-
-    .order-item {
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      padding: 15px;
-      margin-bottom: 15px;
-      background: #fafafa;
-      transition: all 0.3s ease;
-    }
-
-    .order-item:hover {
-      background: #fff;
-      border-color: #4CAF50;
-      box-shadow: 0 2px 8px rgba(76, 175, 80, 0.1);
-    }
-
-    .order-item.migrated {
-      border-left: 4px solid #4CAF50;
-      background: #f0f9f4;
-    }
-
-    .order-item.error {
-      border-left: 4px solid #f44336;
-      background: #ffebee;
-    }
-
-    .order-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 10px;
-    }
-
-    .order-id {
-      font-weight: bold;
-      font-size: 16px;
-      color: #333;
-    }
-
-    .order-status {
-      padding: 5px 12px;
-      border-radius: 20px;
-      font-size: 12px;
-      font-weight: bold;
-    }
-
-    .status-pending {
-      background: #fff3cd;
-      color: #856404;
-    }
-
-    .status-migrating {
-      background: #e7f3ff;
-      color: #0066cc;
-    }
-
-    .status-success {
-      background: #d4edda;
-      color: #155724;
-    }
-
-    .status-error {
-      background: #f8d7da;
-      color: #721c24;
-    }
-
-    .order-details {
-      font-size: 13px;
-      color: #666;
-      margin: 10px 0;
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 10px;
-    }
-
-    .order-detail-item {
-      padding: 5px 0;
-    }
-
-    .order-detail-label {
-      font-weight: bold;
-      color: #333;
-      font-size: 14px;
-    }
-
-    .order-products {
-      margin: 10px 0;
-      padding: 10px;
-      background: white;
-      border-radius: 4px;
-      border-left: 3px solid #2196F3;
-    }
-
-    .product-item {
-      font-size: 12px;
-      color: #666;
-      padding: 3px 0;
-    }
-
-    .product-quantity {
-      font-weight: bold;
-      color: #e91e63;
-      font-size: 13px;
-    }
-
-    .order-actions {
-      display: flex;
-      gap: 10px;
-      margin-top: 15px;
-    }
-
-    button {
-      padding: 8px 16px;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 12px;
-      font-weight: bold;
-      transition: all 0.2s ease;
-    }
-
-    .btn-migrate {
-      background: #4CAF50;
-      color: white;
-    }
-
-    .btn-migrate:hover:not(:disabled) {
-      background: #45a049;
-      transform: translateY(-2px);
-    }
-
-    .btn-migrate:disabled {
-      background: #ccc;
-      cursor: not-allowed;
-    }
-
-    .btn-retry {
-      background: #FF9800;
-      color: white;
-    }
-
-    .btn-retry:hover {
-      background: #F57C00;
-    }
-
-    .loading-spinner {
-      display: inline-block;
-      width: 14px;
-      height: 14px;
-      border: 2px solid #f3f3f3;
-      border-top: 2px solid #4CAF50;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-      margin-right: 8px;
-    }
-
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-
-    .error-message {
-      color: #f44336;
-      font-size: 12px;
-      margin-top: 8px;
-      padding: 8px;
-      background: #ffebee;
-      border-radius: 4px;
-    }
-
-    .success-message {
-      color: #4CAF50;
-      font-size: 12px;
-      margin-top: 8px;
-      padding: 8px;
-      background: #f0f9f4;
-      border-radius: 4px;
-    }
-
-    .empty-state {
-      text-align: center;
-      padding: 40px;
-      color: #999;
-    }
-
-    .empty-state-icon {
-      font-size: 48px;
-      margin-bottom: 15px;
-    }
-
-    .controls {
-      margin: 20px 0;
-    }
-
-    .search-row {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 10px;
-      align-items: center;
-    }
-
-    .search-input {
-      padding: 12px 16px;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      flex: 1;
-      min-width: 0;
-      font-size: 16px;
-    }
-
-    .button-row {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-
-    .btn-primary {
-      background: #2196F3;
-      color: white;
-    }
-
-    .btn-primary:hover {
-      background: #0b7dda;
-    }
-
-    .btn-secondary {
-      background: #f1f1f1;
-      color: #333;
-      border: 1px solid #ddd;
-    }
-
-    .btn-secondary:hover {
-      background: #e5e5e5;
-    }
-
-    .btn-secondary.active {
-      background: #4CAF50;
-      color: white;
-      border-color: #4CAF50;
-    }
-
-    .pagination {
-      display: flex;
-      justify-content: center;
-      gap: 10px;
-      margin-top: 20px;
-    }
-
-    .pagination button {
-      padding: 8px 12px;
-      background: #e0e0e0;
-      color: #333;
-    }
-
-    .pagination button.active {
-      background: #4CAF50;
-      color: white;
-    }
-
-    .progress-bar {
-      width: 100%;
-      height: 6px;
-      background: #e0e0e0;
-      border-radius: 3px;
-      overflow: hidden;
-      margin-top: 10px;
-    }
-
-    .progress-bar-fill {
-      height: 100%;
-      background: #4CAF50;
-      transition: width 0.3s ease;
-    }
-
-    .copy-notification {
-      position: fixed;
-      top: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(0, 0, 0, 0.8);
-      color: white;
-      padding: 12px 20px;
-      border-radius: 8px;
-      font-size: 14px;
-      font-weight: 500;
-      z-index: 1000;
-      animation: fadeInOut 3s ease-in-out;
-      max-width: 80%;
-      text-align: center;
-    }
-
-    @keyframes fadeInOut {
-      0% { opacity: 0; transform: translateX(-50%) translateY(-20px); }
-      10% { opacity: 1; transform: translateX(-50%) translateY(0); }
-      90% { opacity: 1; transform: translateX(-50%) translateY(0); }
-      100% { opacity: 0; transform: translateX(-50%) translateY(-20px); }
-    }
-  </style>
+  <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
   <div id="app">
+    <!-- Copy Notification -->
     <div class="copy-notification" v-if="copyNotification">{{ copyNotification }}</div>
+
+    <!-- Confirmation Modal -->
+    <div class="modal-overlay" v-if="showConfirmModal" @click.self="cancelRemigrate">
+      <div class="modal">
+        <div class="modal-header">⚠️ Xác nhận Migrate Lại</div>
+        <div class="modal-body">
+          <p><strong>Bạn có chắc chắn muốn migrate lại đơn hàng này không?</strong></p>
+          <p v-if="confirmModalOrder">
+            Đơn #{{ confirmModalOrder.order_id }} - {{ confirmModalOrder.customer_name }}
+          </p>
+          <p style="color: #f44336; margin-top: 10px;">
+            ⚠️ Hành động này sẽ:
+            <br>• Xóa đơn hàng trên KiotViet
+            <br>• Xóa thông tin mapping
+            <br>• Tạo lại đơn hàng mới
+          </p>
+        </div>
+        <div class="modal-actions">
+          <button class="btn-cancel" @click="cancelRemigrate">Hủy</button>
+          <button class="btn-confirm" @click="confirmRemigrate">Xác nhận</button>
+        </div>
+      </div>
+    </div>
+
     <div class="container">
       <h2>🔄 KiotViet Migration Tool</h2>
       
       <div class="header-stats1">
-        
-          <span class="stat-value">Tổng Đơn: {{ totalOrders }} - chuyển Kiotviet: {{ migratedCount }} </span>
-        
+        <span class="stat-value">Tổng Đơn: {{ totalOrders }} - chuyển Kiotviet: {{ migratedCount }}</span>
       </div>
 
       <div class="progress-bar">
@@ -468,6 +132,7 @@
           </div>
 
           <div class="order-actions">
+            <!-- Migrate Button - Only show for non-migrated orders -->
             <button 
               v-if="!order.migrated && buttonsUnlocked"
               class="btn-migrate" 
@@ -477,10 +142,23 @@
               <span v-if="order.migrating" class="loading-spinner"></span>
               {{ order.migrating ? 'Đang migrate...' : '▶️ Migrate' }}
             </button>
+
+            <!-- Remigrate Button - Only show for migrated orders -->
+            <button 
+              v-if="order.migrated && buttonsUnlocked"
+              class="btn-remigrate" 
+              @click="showRemigrateConfirm(order)"
+              :disabled="order.migrating || loading"
+            >
+              <span v-if="order.migrating" class="loading-spinner"></span>
+              {{ order.migrating ? 'Đang migrate lại...' : '🔄 Migrate Lại' }}
+            </button>
+
+            <!-- Retry Button - Only show for errors -->
             <button 
               v-if="order.error && !order.migrating"
               class="btn-retry" 
-              
+              @click="migrateOrder(order)"
             >
               🔁 Retry
             </button>
@@ -495,286 +173,8 @@
     </div>
   </div>
 
-  <script>
-    const { createApp } = Vue;
-
-    createApp({
-      data() {
-        return {
-          orders: [],
-          loading: false,
-          migratedCount: 0,
-          failedCount: 0,
-          mapping: { customers: {}, products: {}, orders: {} },
-          buttonsUnlocked: true,
-          unlockClickCount: 88,
-          searchOrderIds: '',
-          baseURL: 'https://s1.vq.id.vn/p3501',
-          showFacebookInfo: true,
-          copyNotification: '',
-        };
-      },
-
-      computed: {
-        totalOrders() {
-          return this.orders.length;
-        },
-        progressPercent() {
-          if (this.totalOrders === 0) return 0;
-          return Math.round((this.migratedCount / this.totalOrders) * 100);
-        },
-      },
-
-      methods: {
-        unlockButtons() {
-          this.unlockClickCount++;
-          
-          if (this.unlockClickCount >= 5) {
-            this.buttonsUnlocked = true;
-          }
-        },
-        async loadOrders() {
-          this.loading = true;
-          try {
-            const response = await fetch(`${this.baseURL}/api/orders`);
-            const result = await response.json();
-
-            if (result.success) {
-              this.orders = result.data.map(o => ({
-                ...o,
-                status: 'pending',
-                migrated: false,
-                migrating: false,
-                error: null,
-                products: [],
-              }));
-
-              // Load existing mapping first to check which orders are already migrated
-              await this.loadMapping();
-
-              // Load products for each order
-              for (const order of this.orders) {
-                await this.loadOrderProducts(order);
-                
-                // Check if order is already in mapping
-                if (this.mapping.orders && this.mapping.orders[order.order_id]) {
-                  order.migrated = true;
-                  order.status = 'success';
-                  order.kiotvietOrderCode = this.mapping.orders[order.order_id].kiotvietOrderCode;
-                }
-              }
-            } else {
-              alert('Lỗi: ' + result.error);
-            }
-          } catch (error) {
-            alert('Lỗi kết nối: ' + error.message);
-          } finally {
-          this.loading = false;
-        }
-      },
-
-      async searchOrders() {
-        if (!this.searchOrderIds.trim()) {
-          alert('Vui lòng nhập order ID để tìm kiếm');
-          return;
-        }
-
-        this.loading = true;
-        try {
-          // Chuyển đổi chuỗi order IDs thành mảng và làm sạch
-          const orderIds = this.searchOrderIds
-            .split(',')
-            .map(id => id.trim())
-            .filter(id => id.length > 0);
-
-          if (orderIds.length === 0) {
-            alert('Không có order ID hợp lệ');
-            return;
-          }
-
-          const response = await fetch(`${this.baseURL}/api/orders?ids=${orderIds.join(',')}`);
-          const result = await response.json();
-
-          if (result.success) {
-            this.orders = result.data.map(o => ({
-              ...o,
-              status: 'pending',
-              migrated: false,
-              migrating: false,
-              error: null,
-              products: [],
-            }));
-
-            // Load existing mapping first to check which orders are already migrated
-            await this.loadMapping();
-
-            // Load products for each order
-            for (const order of this.orders) {
-              await this.loadOrderProducts(order);
-              
-              // Check if order is already in mapping
-              if (this.mapping.orders && this.mapping.orders[order.order_id]) {
-                order.migrated = true;
-                order.status = 'success';
-                order.kiotvietOrderCode = this.mapping.orders[order.order_id].kiotvietOrderCode;
-              }
-            }
-          } else {
-            alert('Lỗi: ' + result.error);
-          }
-        } catch (error) {
-          alert('Lỗi kết nối: ' + error.message);
-        } finally {
-          this.loading = false;
-        }
-      },
-
-        async loadOrderProducts(order) {
-          try {
-            const response = await fetch(`${this.baseURL}/api/order-details/${order.order_id}`);
-            const result = await response.json();
-            if (result.success) {
-              order.products = result.data;
-            }
-          } catch (error) {
-            console.error('Failed to load products:', error);
-          }
-        },
-
-        async migrateOrder(order) {
-          order.status = 'migrating';
-          order.migrating = true;
-          order.error = null;
-
-          try {
-            const response = await fetch(`${this.baseURL}/api/migrate-order`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                orderId: order.order_id,
-                customerId: order.customer_id,
-                orderDetails: order.products,
-                shopId: order.shop_id,
-                note_xuatkho: order.note_xuatkho,
-                note:order.note,
-              }),
-            });
-
-            const result = await response.json();
-
-            if (result.success) {
-              order.status = 'success';
-              order.migrated = true;
-              order.kiotvietOrderCode = result.data.kiotvietOrderCode;
-              this.migratedCount++;
-              await this.loadMapping();
-            } else {
-              order.status = 'error';
-              order.error = result.error;
-              this.failedCount++;
-            }
-          } catch (error) {
-            order.status = 'error';
-            order.error = error.message;
-            this.failedCount++;
-          } finally {
-            order.migrating = false;
-          }
-        },
-
-        async loadMapping() {
-          try {
-            const response = await fetch(`${this.baseURL}/api/mapping`);
-            const result = await response.json();
-            if (result.success) {
-              this.mapping = result.data;
-              this.migratedCount = Object.keys(this.mapping.orders).length;
-            }
-          } catch (error) {
-            console.error('Failed to load mapping:', error);
-          }
-        },
-
-        downloadMapping() {
-          const dataStr = JSON.stringify(this.mapping, null, 2);
-          const blob = new Blob([dataStr], { type: 'application/json' });
-          const url = URL.createObjectURL(blob);
-          const link = document.createElement('a');
-          link.href = url;
-          link.download = `migration_mapping_${new Date().getTime()}.json`;
-          link.click();
-        },
-
-        formatDate(date) {
-          return new Date(date).toLocaleDateString('vi-VN', { 
-            year: 'numeric', 
-            month: '2-digit', 
-            day: '2-digit' 
-          });
-        },
-
-        formatCurrency(value) {
-          return new Intl.NumberFormat('vi-VN', { 
-            style: 'currency', 
-            currency: 'VND' 
-          }).format(value);
-        },
-
-        statusLabel(status) {
-          const labels = {
-            pending: '⏳ Chưa bắt đầu',
-            migrating: '⏳ Đang migrate',
-            success: '✅ Thành công',
-            error: '❌ Lỗi',
-          };
-          return labels[status] || '⏳ Chưa biết';
-        },
-
-        copyOrderInfo(order) {
-          let info = `Đơn ${order.order_id}\n`;
-          info += `KH: ${order.customer_name} (${order.customer_phone})\n`;
-          info += `${order.customer_address || 'Không có địa chỉ'}\n`;
-          
-          const ghiChu = (order.note || '') + ' ' + (order.note_xuatkho || '');
-          if (ghiChu.trim()) {
-            info += `Ghi Chú: ${ghiChu.trim()}\n`;
-          }
-          
-          info += `${this.formatCurrency(order.total_amount)}\n`;
-          
-          if (order.products && order.products.length > 0) {
-            info += `Sản phẩm (${order.products.length}):\n`;
-            order.products.slice(0, 4).forEach(p => {
-              info += `• SL ${p.quantity} - ${p.product_name} - ${this.formatCurrency(p.gia_ban)}\n`;
-            });
-            
-            if (order.products.length > 4) {
-              info += `• ... và ${order.products.length - 4} sản phẩm khác\n`;
-            }
-          }
-
-          navigator.clipboard.writeText(info)
-            .then(() => {
-              this.showCopyNotification('✅ Đã copy thông tin đơn hàng vào clipboard!');
-            })
-            .catch(err => {
-              console.error('Lỗi copy:', err);
-              this.showCopyNotification('❌ Lỗi khi copy thông tin');
-            });
-        },
-
-        showCopyNotification(message) {
-          this.copyNotification = message;
-          setTimeout(() => {
-            this.copyNotification = '';
-          }, 3000);
-        },
-      },
-
-      mounted() {
-        // Đã bỏ tự động load, chỉ load khi click nút
-      },
-    }).mount('#app');
-  </script>
+  <!-- Load JavaScript -->
+  <script src="js/api.service.js"></script>
+  <script src="js/app.js"></script>
 </body>
 </html>
