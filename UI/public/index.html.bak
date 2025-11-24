@@ -17,31 +17,31 @@
     <!-- Confirmation Modal -->
     <div class="modal-overlay" v-if="showConfirmModal" @click.self="cancelRemigrate">
       <div class="modal">
-        <div class="modal-header">⚠️ Xác nhận Migrate Lại</div>
+        <div class="modal-header">âš ï¸ XÃ¡c nháº­n Migrate Láº¡i</div>
         <div class="modal-body">
-          <p><strong>Bạn có chắc chắn muốn migrate lại đơn hàng này không?</strong></p>
+          <p><strong>Báº¡n cÃ³ cháº¯c cháº¯n muá»‘n migrate láº¡i Ä‘Æ¡n hÃ ng nÃ y khÃ´ng?</strong></p>
           <p v-if="confirmModalOrder">
-            Đơn #{{ confirmModalOrder.order_id }} - {{ confirmModalOrder.customer_name }}
+            ÄÆ¡n #{{ confirmModalOrder.order_id }} - {{ confirmModalOrder.customer_name }}
           </p>
           <p style="color: #f44336; margin-top: 10px;">
-            ⚠️ Hành động này sẽ:
-            <br>• Xóa đơn hàng trên KiotViet
-            <br>• Xóa thông tin mapping
-            <br>• Tạo lại đơn hàng mới
+            âš ï¸ HÃ nh Ä‘á»™ng nÃ y sáº½:
+            <br>â€¢ XÃ³a Ä‘Æ¡n hÃ ng trÃªn KiotViet
+            <br>â€¢ XÃ³a thÃ´ng tin mapping
+            <br>â€¢ Táº¡o láº¡i Ä‘Æ¡n hÃ ng má»›i
           </p>
         </div>
         <div class="modal-actions">
-          <button class="btn-cancel" @click="cancelRemigrate">Hủy</button>
-          <button class="btn-confirm" @click="confirmRemigrate">Xác nhận</button>
+          <button class="btn-cancel" @click="cancelRemigrate">Há»§y</button>
+          <button class="btn-confirm" @click="confirmRemigrate">XÃ¡c nháº­n</button>
         </div>
       </div>
     </div>
 
     <div class="container">
-      <h2>🔄 KiotViet Migration Tool</h2>
+      <h2>ðŸ”„ KiotViet Migration Tool</h2>
 
       <div class="header-stats1">
-        <span class="stat-value">Tổng Đơn: {{ totalOrders }} - chuyển Kiotviet: {{ migratedCount }}</span>
+        <span class="stat-value">Tá»•ng ÄÆ¡n: {{ totalOrders }} - chuyá»ƒn Kiotviet: {{ migratedCount }}</span>
       </div>
 
       <div class="progress-bar">
@@ -50,24 +50,24 @@
 
       <div class="controls">
         <div class="search-row">
-          <input v-model="searchOrderIds" placeholder="Nhập order ID (ví dụ: 22323,443434,22223)" class="search-input"
+          <input v-model="searchOrderIds" placeholder="Nháº­p order ID (vÃ­ dá»¥: 22323,443434,22223)" class="search-input"
             @keyup.enter="searchOrders">
           <button class="btn-primary" @click="searchOrders" :disabled="loading">
             <span v-if="loading" class="loading-spinner"></span>
-            🔍 Tìm
+            ðŸ” TÃ¬m
           </button>
         </div>
         <div class="button-row">
           <button class="btn-primary" @click="loadOrders" :disabled="loading">
             <span v-if="loading" class="loading-spinner"></span>
-            {{ loading ? 'Đang tải...' : '🔄 MGS' }}
+            {{ loading ? 'Äang táº£i...' : 'ðŸ”„ MGS' }}
           </button>
           <button class="btn-secondary" @click="showFacebookInfo = !showFacebookInfo"
             :class="{ active: showFacebookInfo }">
-            {{ showFacebookInfo ? '🙈 Ẩn FB' : '👤 Hiện FB' }}
+            {{ showFacebookInfo ? 'ðŸ™ˆ áº¨n FB' : 'ðŸ‘¤ Hiá»‡n FB' }}
           </button>
           <button class="btn-primary" @click="downloadMapping" v-if="buttonsUnlocked">
-            💾 Mapping
+            ðŸ’¾ Mapping
           </button>
         </div>
       </div>
@@ -76,7 +76,7 @@
         <div v-for="order in orders" :key="order.order_id" class="order-item"
           :class="{ migrated: order.migrated, error: order.error }">
           <div class="order-header">
-            <span class="order-id" @click="copyOrderInfo(order)" style="cursor: pointer;">📦 Đơn #{{ order.order_id
+            <span class="order-id" @click="copyOrderInfo(order)" style="cursor: pointer;">ðŸ“¦ ÄÆ¡n #{{ order.order_id
               }}</span>
             <span class="order-status" :class="`status-${order.status || 'pending'}`">
               {{ statusLabel(order.status) }}
@@ -85,47 +85,47 @@
 
           <div class="order-details">
             <div class="order-detail-item">
-              <span class="order-detail-label">Khách Hàng:</span>
+              <span class="order-detail-label">KhÃ¡ch HÃ ng:</span>
               {{ order.customer_name }} ({{ order.customer_phone }})
               <span v-if="showFacebookInfo && order.customer_facebook" class="facebook-info">
                 - Facebook: {{ order.customer_facebook }}
               </span>
             </div>
             <div class="order-detail-item">
-              <span class="order-detail-label">Địa Chỉ:</span>
-              {{ order.customer_address || 'Không có địa chỉ' }}
+              <span class="order-detail-label">Äá»‹a Chá»‰:</span>
+              {{ order.customer_address || 'KhÃ´ng cÃ³ Ä‘á»‹a chá»‰' }}
             </div>
             <div class="order-detail-item">
-              <span class="order-detail-label">Ghi Chú:</span>
-              {{ (order.note || '') + ' ' + (order.note_xuatkho || '') || 'Không có ghi chú' }}
+              <span class="order-detail-label">Ghi ChÃº:</span>
+              {{ (order.note || '') + ' ' + (order.note_xuatkho || '') || 'KhÃ´ng cÃ³ ghi chÃº' }}
             </div>
             <div class="order-detail-item">
-              <span class="order-detail-label">Ngày Tạo:</span>
+              <span class="order-detail-label">NgÃ y Táº¡o:</span>
               {{ formatDate(order.date_created) }}
             </div>
             <div class="order-detail-item">
-              <span class="order-detail-label">Tổng Tiền:</span>
+              <span class="order-detail-label">Tá»•ng Tiá»n:</span>
               {{ formatCurrency(order.total_amount) }}
             </div>
           </div>
 
           <div class="order-products" v-if="order.products">
-            <strong>🛍️ Sản phẩm ({{ order.products.length }}):</strong>
+            <strong>ðŸ›ï¸ Sáº£n pháº©m ({{ order.products.length }}):</strong>
             <div class="product-item" v-for="p in order.products" :key="p.product_id">
-              • <span class="product-quantity">SL {{ p.quantity }}</span> - {{ p.product_name }} - {{
+              â€¢ <span class="product-quantity">SL {{ p.quantity }}</span> - {{ p.product_name }} - {{
               formatCurrency(p.gia_ban) }}
             </div>
             <div class="product-item" v-if="order.products.length > 38">
-              • ... và {{ order.products.length - 3 }} sản phẩm khác
+              â€¢ ... vÃ  {{ order.products.length - 3 }} sáº£n pháº©m khÃ¡c
             </div>
           </div>
 
           <div v-if="order.error" class="error-message">
-            ❌ {{ order.error }}
+            âŒ {{ order.error }}
           </div>
 
           <div v-if="order.migrated" class="success-message">
-            ✅ Migrate thành công! KiotViet Order: {{ order.kiotvietOrderCode }}
+            âœ… Migrate thÃ nh cÃ´ng! KiotViet Order: {{ order.kiotvietOrderCode }}
           </div>
 
           <div class="order-actions">
@@ -133,34 +133,27 @@
             <button v-if="!order.migrated && buttonsUnlocked" class="btn-migrate" @click="migrateOrder(order)"
               :disabled="order.migrating || loading">
               <span v-if="order.migrating" class="loading-spinner"></span>
-              {{ order.migrating ? 'Đang migrate...' : '▶️ Migrate' }}
+              {{ order.migrating ? 'Äang migrate...' : 'â–¶ï¸ Migrate' }}
             </button>
 
             <!-- Remigrate Button - Only show for migrated orders -->
             <button v-if="order.migrated && buttonsUnlocked" class="btn-remigrate" @click="showRemigrateConfirm(order)"
               :disabled="order.migrating || loading">
               <span v-if="order.migrating" class="loading-spinner"></span>
-              {{ order.migrating ? 'Đang migrate lại...' : '🔄 Migrate Lại' }}
-            </button>
-
-            <!-- Change Status Button -->
-            <button v-if="buttonsUnlocked" class="btn-change-status" @click="changeStatus(order)"
-              :disabled="order.migrating || loading">
-              <span v-if="order.migrating" class="loading-spinner"></span>
-              {{ order.migrating ? 'Đang xử lý...' : '🔄 Chuyển Trạng Thái' }}
+              {{ order.migrating ? 'Äang migrate láº¡i...' : 'ðŸ”„ Migrate Láº¡i' }}
             </button>
 
             <!-- Retry Button - Only show for errors -->
             <button v-if="order.error && !order.migrating" class="btn-retry" @click="migrateOrder(order)">
-              🔁 Retry
+              ðŸ” Retry
             </button>
           </div>
         </div>
       </div>
 
       <div v-else class="empty-state">
-        <div class="empty-state-icon">📭</div>
-        <p>Chưa có đơn hàng nào. Nhấp "Tải Đơn Hàng" để bắt đầu.</p>
+        <div class="empty-state-icon">ðŸ“­</div>
+        <p>ChÆ°a cÃ³ Ä‘Æ¡n hÃ ng nÃ o. Nháº¥p "Táº£i ÄÆ¡n HÃ ng" Ä‘á»ƒ báº¯t Ä‘áº§u.</p>
       </div>
     </div>
   </div>

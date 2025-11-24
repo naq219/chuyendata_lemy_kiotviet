@@ -362,6 +362,35 @@ createApp({
                 this.copyNotification = '';
             }, 3000);
         },
+
+        /**
+         * Changes order status to 5 and dvvc to 10
+         */
+        async changeStatus(order) {
+            if (!confirm(`Bạn có chắc chắn muốn chuyển trạng thái đơn hàng #${order.order_id} không?\n\nĐơn hàng sẽ được cập nhật:\n- Status: 5\n- DVVC: 10`)) {
+                return;
+            }
+
+            order.migrating = true;
+            order.error = null;
+
+            try {
+                const result = await api.changeOrderStatus(order.order_id);
+
+                if (result.success) {
+                    this.showCopyNotification(`✅ ${result.message}`);
+                    order.status = 'success';
+                } else {
+                    order.error = result.error;
+                    this.showCopyNotification(`❌ Lỗi: ${result.error}`);
+                }
+            } catch (error) {
+                order.error = error.message;
+                this.showCopyNotification(`❌ Lỗi kết nối: ${error.message}`);
+            } finally {
+                order.migrating = false;
+            }
+        },
     },
 
     mounted() {

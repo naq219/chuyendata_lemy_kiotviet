@@ -3,7 +3,7 @@
 // ============================================================================
 
 import { Router, Request, Response } from 'express';
-import { getOrders, getOrderDetails, getCustomerById, getProductById } from '../services/lemyde.service';
+import { getOrders, getOrderDetails, getCustomerById, getProductById, updateOrderStatus } from '../services/lemyde.service';
 
 const router = Router();
 
@@ -67,6 +67,30 @@ router.get('/product/:productId', async (req: Request, res: Response) => {
         const productId = parseInt(req.params.productId);
         const product = await getProductById(productId);
         res.json({ success: true, data: product });
+    } catch (error) {
+        const err = error as Error;
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+/**
+ * POST /api/change-order-status
+ * Updates order status to 5 and dvvc to 10, then verifies the change
+ */
+router.post('/change-order-status', async (req: Request, res: Response) => {
+    try {
+        const { orderId } = req.body;
+        
+        if (!orderId) {
+            return res.status(400).json({ success: false, error: 'Thiếu orderId trong request' });
+        }
+        
+        const updatedOrder = await updateOrderStatus(parseInt(orderId));
+        res.json({ 
+            success: true, 
+            data: updatedOrder,
+            message: `Đã cập nhật đơn hàng #${orderId} thành công. Status: ${updatedOrder.status}, DVVC: ${updatedOrder.dvvc}` 
+        });
     } catch (error) {
         const err = error as Error;
         res.status(500).json({ success: false, error: err.message });

@@ -91,4 +91,18 @@ class ApiService {
         });
         return await response.json();
     }
+
+    /**
+     * Changes order status to 5 and dvvc to 10
+     * @param {number} orderId - Lemyde order ID
+     * @returns {Promise} API response
+     */
+    async changeOrderStatus(orderId) {
+        const response = await fetch(`${this.baseURL}/api/change-order-status`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ orderId }),
+        });
+        return await response.json();
+    }
 }
