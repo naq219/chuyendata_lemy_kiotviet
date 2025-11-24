@@ -5,6 +5,11 @@ const migration_service_1 = require("../services/migration.service");
 const kiotviet_service_1 = require("../services/kiotviet.service");
 const mapping_util_1 = require("../utils/mapping.util");
 const router = (0, express_1.Router)();
+console.log('🔄 Migration routes module loaded');
+router.use((req, res, next) => {
+    console.log(`🔄 Migration Route Hit: ${req.method} ${req.url}`);
+    next();
+});
 router.post('/migrate-order', async (req, res) => {
     try {
         const { orderId, customerId, orderDetails, shopId, note, note_xuatkho } = req.body;

@@ -8,6 +8,7 @@ exports.getCustomerById = getCustomerById;
 exports.getProductById = getProductById;
 exports.getOrders = getOrders;
 exports.getOrderDetails = getOrderDetails;
+exports.updateOrderStatus = updateOrderStatus;
 const axios_1 = __importDefault(require("axios"));
 const constants_1 = require("../utils/constants");
 async function lemydeQuery(sql) {
@@ -96,5 +97,9 @@ async function getOrderDetails(orderId) {
     WHERE do.order_id = ${orderId}
     ORDER BY do.id 
   `;
+    return await lemydeQuery(sql);
+}
+async function updateOrderStatus(orderId) {
+    const sql = `UPDATE crm.orders SET status = 5, dvvc = 10 WHERE id = ${orderId}`;
     return await lemydeQuery(sql);
 }

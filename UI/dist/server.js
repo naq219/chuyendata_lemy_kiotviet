@@ -48,6 +48,22 @@ const PORT = process.env.PORT || 3000;
 app.use((0, cors_1.default)());
 app.use(express_1.default.json());
 app.use(express_1.default.static('public'));
+app.use((req, res, next) => {
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+    next();
+});
+function printRoutes(stack, prefix = '') {
+    stack.forEach((layer) => {
+        if (layer.route) {
+            const methods = Object.keys(layer.route.methods).join(', ').toUpperCase();
+            console.log(`📍 Route: ${methods} ${prefix}${layer.route.path}`);
+        }
+        else if (layer.name === 'router' && layer.handle.stack) {
+            const routerPrefix = layer.regexp.source.replace('^\\', '').replace('\\/?(?=\\/|$)', '').replace(/\\\//g, '/');
+            printRoutes(layer.handle.stack, prefix + routerPrefix);
+        }
+    });
+}
 async function initializeServices() {
     try {
         (0, kiotviet_service_1.initKiotVietClient)();
@@ -63,5 +79,7 @@ app.use('/api', orders_routes_1.default);
 app.use('/api', migration_routes_1.default);
 app.listen(PORT, () => {
     console.log(`🚀 Server running on http://localhost:${PORT}`);
+    console.log('📋 Registered Routes:');
+    printRoutes(app._router.stack);
 });
 exports.default = app;

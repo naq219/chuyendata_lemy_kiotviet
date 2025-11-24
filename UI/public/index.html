@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,6 +8,7 @@
   <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.js"></script>
   <link rel="stylesheet" href="css/styles.css">
 </head>
+
 <body>
   <div id="app">
     <!-- Copy Notification -->
@@ -37,7 +39,7 @@
 
     <div class="container">
       <h2>🔄 KiotViet Migration Tool</h2>
-      
+
       <div class="header-stats1">
         <span class="stat-value">Tổng Đơn: {{ totalOrders }} - chuyển Kiotviet: {{ migratedCount }}</span>
       </div>
@@ -48,12 +50,8 @@
 
       <div class="controls">
         <div class="search-row">
-          <input 
-            v-model="searchOrderIds" 
-            placeholder="Nhập order ID (ví dụ: 22323,443434,22223)"
-            class="search-input"
-            @keyup.enter="searchOrders"
-          >
+          <input v-model="searchOrderIds" placeholder="Nhập order ID (ví dụ: 22323,443434,22223)" class="search-input"
+            @keyup.enter="searchOrders">
           <button class="btn-primary" @click="searchOrders" :disabled="loading">
             <span v-if="loading" class="loading-spinner"></span>
             🔍 Tìm
@@ -64,7 +62,8 @@
             <span v-if="loading" class="loading-spinner"></span>
             {{ loading ? 'Đang tải...' : '🔄 MGS' }}
           </button>
-          <button class="btn-secondary" @click="showFacebookInfo = !showFacebookInfo" :class="{ active: showFacebookInfo }">
+          <button class="btn-secondary" @click="showFacebookInfo = !showFacebookInfo"
+            :class="{ active: showFacebookInfo }">
             {{ showFacebookInfo ? '🙈 Ẩn FB' : '👤 Hiện FB' }}
           </button>
           <button class="btn-primary" @click="downloadMapping" v-if="buttonsUnlocked">
@@ -74,14 +73,11 @@
       </div>
 
       <div class="orders-list" v-if="orders.length > 0">
-        <div 
-          v-for="order in orders" 
-          :key="order.order_id"
-          class="order-item"
-          :class="{ migrated: order.migrated, error: order.error }"
-        >
+        <div v-for="order in orders" :key="order.order_id" class="order-item"
+          :class="{ migrated: order.migrated, error: order.error }">
           <div class="order-header">
-            <span class="order-id" @click="copyOrderInfo(order)" style="cursor: pointer;">📦 Đơn #{{ order.order_id }}</span>
+            <span class="order-id" @click="copyOrderInfo(order)" style="cursor: pointer;">📦 Đơn #{{ order.order_id
+              }}</span>
             <span class="order-status" :class="`status-${order.status || 'pending'}`">
               {{ statusLabel(order.status) }}
             </span>
@@ -116,7 +112,8 @@
           <div class="order-products" v-if="order.products">
             <strong>🛍️ Sản phẩm ({{ order.products.length }}):</strong>
             <div class="product-item" v-for="p in order.products" :key="p.product_id">
-              • <span class="product-quantity">SL {{ p.quantity }}</span> - {{ p.product_name }} - {{ formatCurrency(p.gia_ban) }}
+              • <span class="product-quantity">SL {{ p.quantity }}</span> - {{ p.product_name }} - {{
+              formatCurrency(p.gia_ban) }}
             </div>
             <div class="product-item" v-if="order.products.length > 38">
               • ... và {{ order.products.length - 3 }} sản phẩm khác
@@ -133,33 +130,21 @@
 
           <div class="order-actions">
             <!-- Migrate Button - Only show for non-migrated orders -->
-            <button 
-              v-if="!order.migrated && buttonsUnlocked"
-              class="btn-migrate" 
-              @click="migrateOrder(order)"
-              :disabled="order.migrating || loading"
-            >
+            <button v-if="!order.migrated && buttonsUnlocked" class="btn-migrate" @click="migrateOrder(order)"
+              :disabled="order.migrating || loading">
               <span v-if="order.migrating" class="loading-spinner"></span>
               {{ order.migrating ? 'Đang migrate...' : '▶️ Migrate' }}
             </button>
 
             <!-- Remigrate Button - Only show for migrated orders -->
-            <button 
-              v-if="order.migrated && buttonsUnlocked"
-              class="btn-remigrate" 
-              @click="showRemigrateConfirm(order)"
-              :disabled="order.migrating || loading"
-            >
+            <button v-if="order.migrated && buttonsUnlocked" class="btn-remigrate" @click="showRemigrateConfirm(order)"
+              :disabled="order.migrating || loading">
               <span v-if="order.migrating" class="loading-spinner"></span>
               {{ order.migrating ? 'Đang migrate lại...' : '🔄 Migrate Lại' }}
             </button>
 
             <!-- Retry Button - Only show for errors -->
-            <button 
-              v-if="order.error && !order.migrating"
-              class="btn-retry" 
-              @click="migrateOrder(order)"
-            >
+            <button v-if="order.error && !order.migrating" class="btn-retry" @click="migrateOrder(order)">
               🔁 Retry
             </button>
           </div>
@@ -177,4 +162,5 @@
   <script src="js/api.service.js"></script>
   <script src="js/app.js"></script>
 </body>
+
 </html>

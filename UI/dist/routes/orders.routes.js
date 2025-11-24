@@ -51,4 +51,15 @@ router.get('/product/:productId', async (req, res) => {
         res.status(500).json({ success: false, error: err.message });
     }
 });
+router.post('/orders/:orderId/status', async (req, res) => {
+    try {
+        const orderId = parseInt(req.params.orderId);
+        await (0, lemyde_service_1.updateOrderStatus)(orderId);
+        res.json({ success: true, message: `Order ${orderId} status updated` });
+    }
+    catch (error) {
+        const err = error;
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
 exports.default = router;
