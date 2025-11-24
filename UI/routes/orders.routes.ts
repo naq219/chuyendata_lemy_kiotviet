@@ -80,16 +80,17 @@ router.get('/product/:productId', async (req: Request, res: Response) => {
 router.post('/change-order-status', async (req: Request, res: Response) => {
     try {
         const { orderId } = req.body;
-        
+
         if (!orderId) {
-            return res.status(400).json({ success: false, error: 'Thiếu orderId trong request' });
+            res.status(400).json({ success: false, error: 'Thiếu orderId trong request' });
+            return;
         }
-        
+
         const updatedOrder = await updateOrderStatus(parseInt(orderId));
-        res.json({ 
-            success: true, 
+        res.json({
+            success: true,
             data: updatedOrder,
-            message: `Đã cập nhật đơn hàng #${orderId} thành công. Status: ${updatedOrder.status}, DVVC: ${updatedOrder.dvvc}` 
+            message: `Đã cập nhật đơn hàng #${orderId} thành công. Status: ${updatedOrder.status}, DVVC: ${updatedOrder.dvvc}`
         });
     } catch (error) {
         const err = error as Error;

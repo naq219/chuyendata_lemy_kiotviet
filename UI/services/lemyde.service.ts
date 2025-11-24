@@ -159,7 +159,9 @@ export async function updateOrderStatus(orderId: number) {
     }
     
     // Verify the status was changed correctly
-    if (updatedOrder.status !== 5 || updatedOrder.dvvc !== 10) {
+    // Use loose equality to handle string/number differences from API
+    if (updatedOrder.status != 5 || updatedOrder.dvvc != 10) {
+        console.error('Verification failed. Updated order:', updatedOrder);
         throw new Error(`Cập nhật không thành công. Status: ${updatedOrder.status}, DVVC: ${updatedOrder.dvvc}`);
     }
     

@@ -100,6 +100,24 @@ async function getOrderDetails(orderId) {
     return await lemydeQuery(sql);
 }
 async function updateOrderStatus(orderId) {
-    const sql = `UPDATE crm.orders SET status = 5, dvvc = 10 WHERE id = ${orderId}`;
-    return await lemydeQuery(sql);
+    const updateSql = `
+    UPDATE crm.orders 
+    SET status = 5, dvvc = 10 
+    WHERE id = ${orderId}
+  `;
+    await lemydeQuery(updateSql);
+    const verifySql = `
+    SELECT id, status, dvvc, customer_id, date_created, total_amount
+    FROM crm.orders
+    WHERE id = ${orderId}
+  `;
+    const [updatedOrder] = await lemydeQuery(verifySql);
+    if (!updatedOrder) {
+        throw new Error(`Không tìm thấy đơn hàng #${orderId} sau khi cập nhật`);
+    }
+    if (updatedOrder.status != 5 || updatedOrder.dvvc != 10) {
+        console.error('Verification failed. Updated order:', updatedOrder);
+        throw new Error(`Cập nhật không thành công. Status: ${updatedOrder.status}, DVVC: ${updatedOrder.dvvc}`);
+    }
+    return updatedOrder;
 }

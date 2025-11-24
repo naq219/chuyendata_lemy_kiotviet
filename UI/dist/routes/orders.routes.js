@@ -51,11 +51,19 @@ router.get('/product/:productId', async (req, res) => {
         res.status(500).json({ success: false, error: err.message });
     }
 });
-router.post('/orders/:orderId/status', async (req, res) => {
+router.post('/change-order-status', async (req, res) => {
     try {
-        const orderId = parseInt(req.params.orderId);
-        await (0, lemyde_service_1.updateOrderStatus)(orderId);
-        res.json({ success: true, message: `Order ${orderId} status updated` });
+        const { orderId } = req.body;
+        if (!orderId) {
+            res.status(400).json({ success: false, error: 'Thiếu orderId trong request' });
+            return;
+        }
+        const updatedOrder = await (0, lemyde_service_1.updateOrderStatus)(parseInt(orderId));
+        res.json({
+            success: true,
+            data: updatedOrder,
+            message: `Đã cập nhật đơn hàng #${orderId} thành công. Status: ${updatedOrder.status}, DVVC: ${updatedOrder.dvvc}`
+        });
     }
     catch (error) {
         const err = error;
