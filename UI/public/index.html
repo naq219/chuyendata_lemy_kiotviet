@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="vi">
 
 <head>
@@ -7,6 +7,59 @@
   <title>KiotViet Migration Tool</title>
   <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.js"></script>
   <link rel="stylesheet" href="css/styles.css">
+  <style>
+    .upload-area {
+      border: 2px dashed #ccc;
+      border-radius: 8px;
+      padding: 20px;
+      text-align: center;
+      min-height: 200px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .upload-placeholder {
+      text-align: center;
+    }
+
+    .upload-icon {
+      font-size: 48px;
+      margin-bottom: 10px;
+    }
+
+    .image-preview {
+      text-align: center;
+    }
+
+    .btn-ncc-ship {
+      background: #ff9800;
+      color: white;
+      padding: 8px 16px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .btn-ncc-ship:hover {
+      background: #f57c00;
+    }
+
+    .btn-ncc-ship:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-change-status {
+      background: #2196f3;
+      color: white;
+      padding: 8px16px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-right: 5px;
+    }
+  </style>
 </head>
 
 <body>
@@ -33,6 +86,52 @@
         <div class="modal-actions">
           <button class="btn-cancel" @click="cancelRemigrate">Hủy</button>
           <button class="btn-confirm" @click="confirmRemigrate">Xác nhận</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- NCC Ship Modal -->
+    <div class="modal-overlay" v-if="showNccShipModal" @click.self="closeNccShipDialog">
+      <div class="modal" @paste="handleImagePaste">
+        <div class="modal-header">🚚 Chuyển NCC Ship</div>
+        <div class="modal-body">
+          <p v-if="nccShipOrder">
+            Đơn #{{ nccShipOrder.order_id }} - {{ nccShipOrder.customer_name }}
+          </p>
+
+          <!-- Image Upload Area -->
+          <div class="upload-area">
+            <div v-if="!nccShipImagePreview" class="upload-placeholder">
+              <div class="upload-icon">📷</div>
+              <p>Kéo thả ảnh vào đây hoặc nhấn để chọn file</p>
+              <p style="font-size: 0.9em; color: #666;">Hoặc nhấn Ctrl+V để paste ảnh</p>
+              <input type="file" @change="handleImageUpload" accept="image/*" style="display: none;" ref="fileInput">
+              <button class="btn-secondary" @click="$refs.fileInput.click()" style="margin-top: 10px;">
+                📁 Chọn File
+              </button>
+            </div>
+            <div v-else class="image-preview">
+              <img :src="nccShipImagePreview" alt="Preview" style="max-width: 100%; max-height: 300px;">
+              <button class="btn-cancel" @click="nccShipImage = null; nccShipImagePreview = null;"
+                style="margin-top: 10px;">
+                ❌ Xóa ảnh
+              </button>
+            </div>
+          </div>
+
+          <!-- NCC Order ID Input -->
+          <div style="margin-top: 20px;">
+            <label style="display: block; margin-bottom: 5px; font-weight: bold;">Mã đơn NCC:</label>
+            <input v-model="nccOrderId" type="text" placeholder="Nhập mã đơn NCC"
+              style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button class="btn-cancel" @click="closeNccShipDialog" :disabled="uploadingNccShip">Hủy</button>
+          <button class="btn-confirm" @click="uploadNccShip" :disabled="uploadingNccShip">
+            <span v-if="uploadingNccShip" class="loading-spinner"></span>
+            {{ uploadingNccShip ? 'Đang upload...' : '📤 Upload' }}
+          </button>
         </div>
       </div>
     </div>
@@ -151,6 +250,12 @@
               {{ order.migrating ? 'Đang xử lý...' : '🔄 Chuyển Trạng Thái' }}
             </button>
 
+            <!-- NCC Ship Button -->
+            <button v-if="buttonsUnlocked" class="btn-ncc-ship" @click="openNccShipDialog(order)"
+              :disabled="order.migrating || loading">
+              🚚 Chuyển NCC Ship
+            </button>
+
             <!-- Retry Button - Only show for errors -->
             <button v-if="order.error && !order.migrating" class="btn-retry" @click="migrateOrder(order)">
               🔁 Retry
@@ -167,8 +272,8 @@
   </div>
 
   <!-- Load JavaScript -->
-  <script src="js/api.service.js?v=5"></script>
-  <script src="js/app.js?v=5"></script>
+  <script src="js/api.service.js?v=6"></script>
+  <script src="js/app.js?v=6"></script>
 </body>
 
 </html>

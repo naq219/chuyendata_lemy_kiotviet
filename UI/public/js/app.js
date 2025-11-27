@@ -24,6 +24,13 @@ createApp({
             // Confirmation modal for remigration
             showConfirmModal: false,
             confirmModalOrder: null,
+            // NCC Ship dialog
+            showNccShipModal: false,
+            nccShipOrder: null,
+            nccShipImage: null, // Base64 image data
+            nccShipImagePreview: null, // Preview URL
+            nccOrderId: '',
+            uploadingNccShip: false,
         };
     },
 
@@ -362,7 +369,7 @@ createApp({
                 orders: {
                     order_id: order.order_id,
                     total_amount: order.total_amount,
-                    
+
                     // Các trường "đã nhận" và "order_shipper_lb_id dvvc" không có sẵn trực tiếp trong đối tượng order
                     // Nếu cần, bạn sẽ phải bổ sung dữ liệu này từ nguồn khác hoặc API
                 },
@@ -424,6 +431,194 @@ createApp({
                 this.showCopyNotification(`❌ Lỗi kết nối: ${error.message}`);
             } finally {
                 order.migrating = false;
+            }
+        },
+
+        /**
+         * Opens NCC Ship dialog
+         */
+        openNccShipDialog(order) {
+            this.nccShipOrder = order;
+            this.showNccShipModal = true;
+            this.nccShipImage = null;
+            this.nccShipImagePreview = null;
+            this.nccOrderId = '';
+        },
+
+        /**
+         * Closes NCC Ship dialog
+         */
+        closeNccShipDialog() {
+            this.showNccShipModal = false;
+            this.nccShipOrder = null;
+            this.nccShipImage = null;
+            this.nccShipImagePreview = null;
+            this.nccOrderId = '';
+            this.uploadingNccShip = false;
+        },
+
+        /**
+         * Handles image upload from file input
+         */
+        async handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            try {
+                await this.convertToWebP(file);
+            } catch (error) {
+                this.showCopyNotification('❌ Lỗi xử lý ảnh: ' + error.message);
+            }
+        },
+
+        /**
+         * Handles image paste event
+         */
+        async handleImagePaste(event) {
+            const items = event.clipboardData?.items;
+            if (!items) return;
+
+            for (let item of items) {
+                if (item.type.indexOf('image') !== -1) {
+                    const file = item.getAsFile();
+                    if (file) {
+                        try {
+                            await this.convertToWebP(file);
+                        } catch (error) {
+                            this.showCopyNotification('❌ Lỗi xử lý ảnh: ' + error.message);
+                        }
+                        break;
+                    }
+                }
+            }
+        },
+
+        /**
+         * Converts image to WebP and resizes if needed
+         */
+        async convertToWebP(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+
+                reader.onload = (e) => {
+                    const img = new Image();
+
+                    img.onload = () => {
+                        // Create canvas
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+
+                        // Calculate new dimensions (max 2000px)
+                        let width = img.width;
+                        let height = img.height;
+                        const maxSize = 2000;
+
+                        if (width > maxSize || height > maxSize) {
+                            if (width > height) {
+                                height = (height / width) * maxSize;
+                                width = maxSize;
+                            } else {
+                                width = (width / height) * maxSize;
+                                height = maxSize;
+                            }
+                        }
+
+                        canvas.width = width;
+                        canvas.height = height;
+
+                        // Draw and convert to WebP
+                        ctx.drawImage(img, 0, 0, width, height);
+
+                        // Get base64 WebP data
+                        const webpDataUrl = canvas.toDataURL('image/webp', 0.9);
+
+                        // Extract base64 string (remove data:image/webp;base64, prefix)
+                        const base64Data = webpDataUrl.split(',')[1];
+
+                        this.nccShipImage = base64Data;
+                        this.nccShipImagePreview = webpDataUrl;
+
+                        this.showCopyNotification('✅ Ảnh đã được tải và chuyển đổi');
+                        resolve();
+                    };
+
+                    img.onerror = () => {
+                        reject(new Error('Không thể tải ảnh'));
+                    };
+
+                    img.src = e.target.result;
+                };
+
+                reader.onerror = () => {
+                    reject(new Error('Không thể đọc file'));
+                };
+
+                reader.readAsDataURL(file);
+            });
+        },
+
+        /**
+         * Uploads NCC ship data
+         */
+        async uploadNccShip() {
+            if (!this.nccShipImage) {
+                this.showCopyNotification('❌ Vui lòng chọn ảnh');
+                return;
+            }
+
+            if (!this.nccOrderId.trim()) {
+                this.showCopyNotification('❌ Vui lòng nhập mã đơn NCC');
+                return;
+            }
+
+            this.uploadingNccShip = true;
+
+            try {
+                // Step 1: Upload image
+                const timestamp = Date.now();
+                const filename = `order_${this.nccShipOrder.order_id}_${timestamp}.webp`;
+
+                const uploadResult = await api.uploadImage(this.nccShipImage, filename);
+
+                if (!uploadResult.success) {
+                    throw new Error(uploadResult.message || 'Upload ảnh thất bại');
+                }
+
+                const imageUrl = uploadResult.data.url;
+
+                // Step 2: Prepare details JSON
+                const details = {
+                    products: this.nccShipOrder.products.map(p => ({
+                        product_id: p.product_id,
+                        name: p.product_name,
+                        quantity: p.quantity,
+                        gia_ban: p.gia_ban,
+                        gia_nhap: p.gia_nhap,
+                    })),
+                };
+
+                // Step 3: Insert to database
+                const insertResult = await api.insertNccShip({
+                    order_id: this.nccShipOrder.order_id,
+                    ncc_orderid: this.nccOrderId,
+                    ncc_bill_image: imageUrl,
+                    total_amount: this.nccShipOrder.total_amount,
+                    money_received: this.nccShipOrder.money_received || 0,
+                    free_ship: this.nccShipOrder.free_ship || 0,
+                    note: this.nccShipOrder.note || '',
+                    details: JSON.stringify(details),
+                });
+
+                if (insertResult.success) {
+                    this.showCopyNotification('✅ Đã thêm NCC ship thành công!');
+                    this.closeNccShipDialog();
+                } else {
+                    throw new Error(insertResult.error || 'Lưu dữ liệu thất bại');
+                }
+            } catch (error) {
+                this.showCopyNotification('❌ Lỗi: ' + error.message);
+            } finally {
+                this.uploadingNccShip = false;
             }
         },
     },

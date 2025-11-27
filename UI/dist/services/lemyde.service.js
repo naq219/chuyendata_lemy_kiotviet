@@ -9,6 +9,7 @@ exports.getProductById = getProductById;
 exports.getOrders = getOrders;
 exports.getOrderDetails = getOrderDetails;
 exports.updateOrderStatus = updateOrderStatus;
+exports.insertNccShip = insertNccShip;
 const axios_1 = __importDefault(require("axios"));
 const constants_1 = require("../utils/constants");
 async function lemydeQuery(sql) {
@@ -87,6 +88,7 @@ async function getOrderDetails(orderId) {
       do.id AS detail_order_id,
       do.product_id,
       p.name AS product_name,
+      
       p.cost_price,
       p.retail_price,
       do.quantity,
@@ -120,4 +122,37 @@ async function updateOrderStatus(orderId) {
         throw new Error(`Cập nhật không thành công. Status: ${updatedOrder.status}, DVVC: ${updatedOrder.dvvc}`);
     }
     return updatedOrder;
+}
+async function insertNccShip(data) {
+    const escapeSql = (str) => str.replace(/'/g, "''");
+    const insertSql = `
+    INSERT INTO crm.ncc_ship 
+    (order_id, ncc_id, ncc_name, total_amount, money_received, free_ship, nccsstatus, note, details, ncc_bill_image, ncc_orderid)
+    VALUES (
+        ${data.order_id},
+        1,
+        'mgs',
+        ${data.total_amount},
+        ${data.money_received},
+        ${data.free_ship},
+        1,
+        '${escapeSql(data.note || '')}',
+        '${escapeSql(data.details)}',
+        '${escapeSql(data.ncc_bill_image)}',
+        '${escapeSql(data.ncc_orderid)}'
+    )
+  `;
+    console.log(insertSql);
+    await lemydeQuery(insertSql);
+    const verifySql = `
+    SELECT * FROM crm.ncc_ship
+    WHERE order_id = ${data.order_id}
+    ORDER BY id DESC
+    LIMIT 1
+  `;
+    const [insertedRecord] = await lemydeQuery(verifySql);
+    if (!insertedRecord) {
+        throw new Error(`Không tìm thấy bản ghi NCC ship cho order #${data.order_id} sau khi insert`);
+    }
+    return insertedRecord;
 }

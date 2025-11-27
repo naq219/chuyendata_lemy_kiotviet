@@ -70,4 +70,55 @@ router.post('/change-order-status', async (req, res) => {
         res.status(500).json({ success: false, error: err.message });
     }
 });
+router.post('/ncc-ship', async (req, res) => {
+    try {
+        console.log('=== NCC Ship Request Received ===');
+        console.log('Request body:', JSON.stringify(req.body, null, 2));
+        const { order_id, ncc_orderid, ncc_bill_image, total_amount, money_received, free_ship, note, details } = req.body;
+        if (!order_id || !ncc_orderid || !ncc_bill_image) {
+            console.log('❌ Validation failed - missing required fields');
+            res.status(400).json({
+                success: false,
+                error: 'Thiếu thông tin bắt buộc: order_id, ncc_orderid, ncc_bill_image'
+            });
+            return;
+        }
+        console.log('✅ Validation passed');
+        console.log('Calling insertNccShip with data:', {
+            order_id: parseInt(order_id),
+            ncc_orderid,
+            ncc_bill_image: ncc_bill_image.substring(0, 50) + '...',
+            total_amount: total_amount || 0,
+            money_received: money_received || 0,
+            free_ship: free_ship || 0,
+            note: note || '',
+            details: details ? details.substring(0, 100) + '...' : '{}',
+        });
+        const insertedRecord = await (0, lemyde_service_1.insertNccShip)({
+            order_id: parseInt(order_id),
+            ncc_orderid,
+            ncc_bill_image,
+            total_amount: total_amount || 0,
+            money_received: money_received || 0,
+            free_ship: free_ship || 0,
+            note: note || '',
+            details: details || '{}',
+        });
+        console.log('✅ Insert successful, record:', insertedRecord);
+        console.log('Sending response...');
+        res.json({
+            success: true,
+            data: insertedRecord,
+            message: `Đã thêm NCC ship cho đơn hàng #${order_id} thành công`
+        });
+        console.log('✅ Response sent successfully');
+    }
+    catch (error) {
+        const err = error;
+        console.error('❌ Error in /ncc-ship route:');
+        console.error('Error message:', err.message);
+        console.error('Error stack:', err.stack);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
 exports.default = router;

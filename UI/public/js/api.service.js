@@ -105,4 +105,38 @@ class ApiService {
         });
         return await response.json();
     }
+
+    /**
+     * Uploads image to external image service
+     * @param {string} imageBase64 - Base64 encoded image
+     * @param {string} filename - Image filename
+     * @returns {Promise} API response
+     */
+    async uploadImage(imageBase64, filename) {
+        const response = await fetch('https://s1.vq.id.vn/p405/api/upload', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                project: 'kiotviet-migrate',
+                filename: filename,
+                provider: 'github',
+                image: imageBase64,
+            }),
+        });
+        return await response.json();
+    }
+
+    /**
+     * Inserts NCC ship data to database
+     * @param {Object} nccShipData - NCC ship data
+     * @returns {Promise} API response
+     */
+    async insertNccShip(nccShipData) {
+        const response = await fetch(`${this.baseURL}/api/ncc-ship`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(nccShipData),
+        });
+        return await response.json();
+    }
 }
