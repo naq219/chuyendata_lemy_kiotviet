@@ -116,6 +116,7 @@ export async function getOrderDetails(orderId: number) {
       do.id AS detail_order_id,
       do.product_id,
       p.name AS product_name,
+      
       p.cost_price,
       p.retail_price,
       do.quantity,

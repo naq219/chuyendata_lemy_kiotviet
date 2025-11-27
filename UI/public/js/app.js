@@ -354,6 +354,41 @@ createApp({
         },
 
         /**
+         * Copies order details to JSON format to clipboard
+         */
+        copyOrderDetailsToJson(order) {
+            console.log(order);
+            const oneLine = {
+                orders: {
+                    order_id: order.order_id,
+                    total_amount: order.total_amount,
+                    
+                    // Các trường "đã nhận" và "order_shipper_lb_id dvvc" không có sẵn trực tiếp trong đối tượng order
+                    // Nếu cần, bạn sẽ phải bổ sung dữ liệu này từ nguồn khác hoặc API
+                },
+                products: order.products.map(p => ({
+                    detail_order_id: p.detail_order_id,
+                    product_id: p.product_id,
+                    quantity: p.quantity,
+                    gianhap: p.gia_nhap,
+                    gia_ban: p.gia_ban,
+                    product_name: p.product_name,
+                })),
+            };
+
+            const jsonOutput = JSON.stringify(oneLine);
+
+            navigator.clipboard.writeText(JSON.stringify(jsonOutput, null, 2))
+                .then(() => {
+                    this.showCopyNotification('✅ Đã copy JSON chi tiết đơn hàng vào clipboard!');
+                })
+                .catch(err => {
+                    console.error('Lỗi copy JSON:', err);
+                    this.showCopyNotification('❌ Lỗi khi copy JSON chi tiết đơn hàng');
+                });
+        },
+
+        /**
          * Shows copy notification
          */
         showCopyNotification(message) {
