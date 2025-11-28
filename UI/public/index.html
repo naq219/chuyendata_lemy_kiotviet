@@ -175,10 +175,10 @@
         <div v-for="order in orders" :key="order.order_id" class="order-item"
           :class="{ migrated: order.migrated, error: order.error }">
           <div class="order-header">
-            <span class="order-id" @click="copyOrderInfo(order)" style="cursor: pointer;">📦 Đơn #{{ order.order_id
-              }}</span>
+            <span class="order-id" @click="copyOrderInfo(order)" style="cursor: pointer;">📦 DHM{{ order.order_id
+              }}</span> <span style="font-size: 0.9em; color: #1902ed;">{{ mapOrderStatus(order.order_status) }}</span>
             <span class="copy-icon" @click.stop="copyOrderDetailsToJson(order)" title="Copy chi tiết đơn hàng">📋</span>
-            <span class="order-status" :class="`status-${order.status || 'pending'}`">
+            <span class="order-status" :class="`status-${order.status || 'errr'}`">
               {{ statusLabel(order.status) }}
             </span>
           </div>

@@ -21,6 +21,7 @@ router.get('/orders', async (req: Request, res: Response) => {
         }
 
         const orders = await getOrders(idsArray);
+        console.log(orders);
         res.json({ success: true, data: orders });
     } catch (error) {
         const err = error as Error;

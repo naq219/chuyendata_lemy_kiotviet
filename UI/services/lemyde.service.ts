@@ -18,7 +18,7 @@ export async function lemydeQuery<T>(sql: string): Promise<T[]> {
   if (response.data.status !== 1 || !response.data.data) {
     throw new Error(`Lemyde API error: ${JSON.stringify(response.data)}`);
   }
-
+ 
   return response.data.data as T[];
 }
 
@@ -64,11 +64,11 @@ export async function getOrders(orderIds?: string[]) {
     // Filter by specific order IDs
     const idsArray = orderIds.map(id => id.trim()).filter(id => id.length > 0);
     if (idsArray.length > 0) {
-      whereCondition = `AND o.id IN (${idsArray.join(',')})`;
+      whereCondition = `o.id IN (${idsArray.join(',')})`;
     }
   } else {
     // Default filter: orders containing products with 'nck1' in name
-    whereCondition = `AND o.id IN (
+    whereCondition = `o.status = 1 AND o.id IN (
       SELECT DISTINCT do.order_id 
       FROM crm.detail_orders do
       JOIN crm.products p ON do.product_id = p.id
@@ -79,6 +79,7 @@ export async function getOrders(orderIds?: string[]) {
   const sql = `
     SELECT 
       o.id AS order_id,
+      o.status as order_status,
       o.customer_id,
       o.date_created,
       o.shop_id,
@@ -97,7 +98,7 @@ export async function getOrders(orderIds?: string[]) {
       ) AS images
     FROM crm.orders o
     JOIN crm.customers c ON o.customer_id = c.id
-    WHERE o.status = 1
+    WHERE 
       ${whereCondition}
     ORDER BY o.id DESC 
   `;

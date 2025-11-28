@@ -31,6 +31,7 @@ createApp({
             nccShipImagePreview: null, // Preview URL
             nccOrderId: '',
             uploadingNccShip: false,
+            
         };
     },
 
@@ -45,6 +46,18 @@ createApp({
     },
 
     methods: {
+        mapOrderStatus(code) {
+    const mapping = {
+       
+        1: "Đang Order",
+        2: "Gửi Ship",
+        3: "Đã Nhận",
+        4: "Đã huỷ",
+        5: "Lấy hàng",
+    };
+    return mapping[code] || "Không rõ";
+},
+
         unlockButtons() {
             this.unlockClickCount++;
             if (this.unlockClickCount >= 5) {
@@ -328,6 +341,7 @@ createApp({
          * Copies order info to clipboard
          */
         copyOrderInfo(order) {
+            console.log(order);
             let info = `Đơn ${order.order_id}\n`;
             info += `KH: ${order.customer_name} (${order.customer_phone})\n`;
             info += `${order.customer_address || 'Không có địa chỉ'}\n`;

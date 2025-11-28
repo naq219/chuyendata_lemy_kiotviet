@@ -11,6 +11,7 @@ router.get('/orders', async (req, res) => {
             idsArray = orderIds.split(',').map(id => id.trim()).filter(id => id.length > 0);
         }
         const orders = await (0, lemyde_service_1.getOrders)(idsArray);
+        console.log(orders);
         res.json({ success: true, data: orders });
     }
     catch (error) {

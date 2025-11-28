@@ -44,11 +44,11 @@ async function getOrders(orderIds) {
     if (orderIds && orderIds.length > 0) {
         const idsArray = orderIds.map(id => id.trim()).filter(id => id.length > 0);
         if (idsArray.length > 0) {
-            whereCondition = `AND o.id IN (${idsArray.join(',')})`;
+            whereCondition = `o.id IN (${idsArray.join(',')})`;
         }
     }
     else {
-        whereCondition = `AND o.id IN (
+        whereCondition = `o.status = 1 AND o.id IN (
       SELECT DISTINCT do.order_id 
       FROM crm.detail_orders do
       JOIN crm.products p ON do.product_id = p.id
@@ -58,6 +58,7 @@ async function getOrders(orderIds) {
     const sql = `
     SELECT 
       o.id AS order_id,
+      o.status as order_status,
       o.customer_id,
       o.date_created,
       o.shop_id,
@@ -76,7 +77,7 @@ async function getOrders(orderIds) {
       ) AS images
     FROM crm.orders o
     JOIN crm.customers c ON o.customer_id = c.id
-    WHERE o.status = 1
+    WHERE 
       ${whereCondition}
     ORDER BY o.id DESC 
   `;
