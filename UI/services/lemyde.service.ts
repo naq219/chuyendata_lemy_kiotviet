@@ -18,7 +18,7 @@ export async function lemydeQuery<T>(sql: string): Promise<T[]> {
   if (response.data.status !== 1 || !response.data.data) {
     throw new Error(`Lemyde API error: ${JSON.stringify(response.data)}`);
   }
- 
+
   return response.data.data as T[];
 }
 

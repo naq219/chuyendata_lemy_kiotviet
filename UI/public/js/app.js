@@ -30,8 +30,9 @@ createApp({
             nccShipImage: null, // Base64 image data
             nccShipImagePreview: null, // Preview URL
             nccOrderId: '',
+            nccOrderDate: '',
             uploadingNccShip: false,
-            
+
         };
     },
 
@@ -47,16 +48,16 @@ createApp({
 
     methods: {
         mapOrderStatus(code) {
-    const mapping = {
-       
-        1: "Đang Order",
-        2: "Gửi Ship",
-        3: "Đã Nhận",
-        4: "Đã huỷ",
-        5: "Lấy hàng",
-    };
-    return mapping[code] || "Không rõ";
-},
+            const mapping = {
+
+                1: "Đang Order",
+                2: "Gửi Ship",
+                3: "Đã Nhận",
+                4: "Đã huỷ",
+                5: "Lấy hàng",
+            };
+            return mapping[code] || "Không rõ";
+        },
 
         unlockButtons() {
             this.unlockClickCount++;
@@ -457,6 +458,7 @@ createApp({
             this.nccShipImage = null;
             this.nccShipImagePreview = null;
             this.nccOrderId = '';
+            this.nccOrderDate = '';
         },
 
         /**
@@ -468,6 +470,7 @@ createApp({
             this.nccShipImage = null;
             this.nccShipImagePreview = null;
             this.nccOrderId = '';
+            this.nccOrderDate = '';
             this.uploadingNccShip = false;
         },
 
@@ -615,6 +618,7 @@ createApp({
                 const insertResult = await api.insertNccShip({
                     order_id: this.nccShipOrder.order_id,
                     ncc_orderid: this.nccOrderId,
+                    date_create_bill: `${this.nccOrderDate} 00:00:00`,
                     ncc_bill_image: imageUrl,
                     total_amount: this.nccShipOrder.total_amount,
                     money_received: this.nccShipOrder.money_received || 0,
