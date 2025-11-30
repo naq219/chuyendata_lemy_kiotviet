@@ -132,11 +132,18 @@ class ApiService {
      * @returns {Promise} API response
      */
     async insertNccShip(nccShipData) {
+
+       let abc = JSON.stringify(nccShipData)
+        console.log(JSON.stringify(nccShipData, null, 2));
+
+
         const response = await fetch(`${this.baseURL}/api/ncc-ship`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(nccShipData),
+            body: abc,
         });
         return await response.json();
     }
+
+
 }

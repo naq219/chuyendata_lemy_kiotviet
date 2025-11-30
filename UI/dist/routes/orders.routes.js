@@ -73,10 +73,8 @@ router.post('/change-order-status', async (req, res) => {
 });
 router.post('/ncc-ship', async (req, res) => {
     try {
-        console.log('=== NCC Ship Request Received ===');
-        console.log('Request body:', JSON.stringify(req.body, null, 2));
-        const { order_id, ncc_orderid, ncc_bill_image, total_amount, money_received, free_ship, note, details } = req.body;
-        if (!order_id || !ncc_orderid || !ncc_bill_image) {
+        const { order_id, ncc_orderid, ncc_bill_image, total_amount, money_received, free_ship, note, details, date_create_bill } = req.body;
+        if (!order_id) {
             console.log('❌ Validation failed - missing required fields');
             res.status(400).json({
                 success: false,
@@ -104,6 +102,7 @@ router.post('/ncc-ship', async (req, res) => {
             free_ship: free_ship || 0,
             note: note || '',
             details: details || '{}',
+            date_create_bill,
         });
         console.log('✅ Insert successful, record:', insertedRecord);
         console.log('Sending response...');

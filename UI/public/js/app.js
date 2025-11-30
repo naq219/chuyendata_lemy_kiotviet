@@ -459,6 +459,7 @@ createApp({
             this.nccShipImagePreview = null;
             this.nccOrderId = '';
             this.nccOrderDate = '';
+        
         },
 
         /**
@@ -577,31 +578,43 @@ createApp({
         /**
          * Uploads NCC ship data
          */
-        async uploadNccShip() {
-            if (!this.nccShipImage) {
-                this.showCopyNotification('❌ Vui lòng chọn ảnh');
-                return;
-            }
+        // Thay thế hàm uploadNccShip trong app.js
 
-            if (!this.nccOrderId.trim()) {
-                this.showCopyNotification('❌ Vui lòng nhập mã đơn NCC');
-                return;
+        /**
+         * Uploads NCC ship data
+         */
+        async uploadNccShip() {
+            // Check for missing information
+            const missingInfo = [];
+            if (!this.nccShipImage) missingInfo.push('Ảnh hóa đơn');
+            if (!this.nccOrderId || !this.nccOrderId.trim()) missingInfo.push('Mã đơn NCC');
+            if (!this.nccOrderDate) missingInfo.push('Ngày NCC xuất đơn');
+
+            if (missingInfo.length > 0) {
+                const message = `Các thông tin sau chưa được nhập:\n- ${missingInfo.join('\n- ')}\n\nBạn có chắc chắn muốn tiếp tục upload không?`;
+                if (!confirm(message)) {
+                    return;
+                }
             }
 
             this.uploadingNccShip = true;
 
             try {
-                // Step 1: Upload image
-                const timestamp = Date.now();
-                const filename = `order_${this.nccShipOrder.order_id}_${timestamp}.webp`;
+                let imageUrl = '';
 
-                const uploadResult = await api.uploadImage(this.nccShipImage, filename);
+                // Step 1: Upload image (only if exists)
+                if (this.nccShipImage) {
+                    const timestamp = Date.now();
+                    const filename = `order_${this.nccShipOrder.order_id}_${timestamp}.webp`;
 
-                if (!uploadResult.success) {
-                    throw new Error(uploadResult.message || 'Upload ảnh thất bại');
+                    const uploadResult = await api.uploadImage(this.nccShipImage, filename);
+
+                    if (!uploadResult.success) {
+                        throw new Error(uploadResult.message || 'Upload ảnh thất bại');
+                    }
+
+                    imageUrl = uploadResult.data.url;
                 }
-
-                const imageUrl = uploadResult.data.url;
 
                 // Step 2: Prepare details JSON
                 const details = {
@@ -614,11 +627,34 @@ createApp({
                     })),
                 };
 
-                // Step 3: Insert to database
+                // Step 3: Convert date to timestamp
+                // Các tùy chọn dưới đây, chọn một cái phù hợp với backend:
+
+                // OPTION A: Timestamp theo milliseconds (JavaScript)
+                let dateTimestamp = null;
+                
+                    const date = new Date(`${this.nccOrderDate}T00:00:00`);
+                    const mysqlTimestamp = date.toISOString().slice(0, 19).replace('T', ' ');
+                    dateTimestamp = mysqlTimestamp;
+                
+                    console.log(dateTimestamp)
+
+
+
+                // OPTION B: Timestamp theo giây (Unix timestamp)
+                // let dateTimestamp = null;
+                // if (this.nccOrderDate) {
+                //     dateTimestamp = Math.floor(new Date(`${this.nccOrderDate}T00:00:00`).getTime() / 1000);
+                // }
+
+                // OPTION C: Giữ nguyên định dạng datetime string (nếu backend xử lý được)
+                // let dateTimestamp = this.nccOrderDate ? `${this.nccOrderDate} 00:00:00` : null;
+
+                // Step 4: Insert to database
                 const insertResult = await api.insertNccShip({
                     order_id: this.nccShipOrder.order_id,
                     ncc_orderid: this.nccOrderId,
-                    date_create_bill: `${this.nccOrderDate} 00:00:00`,
+                    date_create_bill: dateTimestamp, // Gửi timestamp thay vì string
                     ncc_bill_image: imageUrl,
                     total_amount: this.nccShipOrder.total_amount,
                     money_received: this.nccShipOrder.money_received || 0,

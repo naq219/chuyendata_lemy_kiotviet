@@ -4,6 +4,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.lemydeQuery = lemydeQuery;
+exports.lemydeInsert = lemydeInsert;
 exports.getCustomerById = getCustomerById;
 exports.getProductById = getProductById;
 exports.getOrders = getOrders;
@@ -20,6 +21,17 @@ async function lemydeQuery(sql) {
         throw new Error(`Lemyde API error: ${JSON.stringify(response.data)}`);
     }
     return response.data.data;
+}
+async function lemydeInsert(sql) {
+    const response = await axios_1.default.get(constants_1.LEMYDE_API_URL + '/sql/statement', {
+        params: { sql, split: "###$" },
+    });
+    console.log('response.status');
+    console.log(response);
+    if (response.data.status !== 1) {
+        throw new Error(`Lemyde API error: ${JSON.stringify(response.data)}`);
+    }
+    return response.data;
 }
 async function getCustomerById(customerId) {
     const sql = `
@@ -128,7 +140,7 @@ async function insertNccShip(data) {
     const escapeSql = (str) => str.replace(/'/g, "''");
     const insertSql = `
     INSERT INTO crm.ncc_ship 
-    (order_id, ncc_id, ncc_name, total_amount, money_received, free_ship, nccsstatus, note, details, ncc_bill_image, ncc_orderid)
+    (order_id, ncc_id, ncc_name, total_amount, money_received, free_ship, nccsstatus, note, details, ncc_bill_image, ncc_orderid,date_create_bill)
     VALUES (
         ${data.order_id},
         1,
@@ -140,15 +152,16 @@ async function insertNccShip(data) {
         '${escapeSql(data.note || '')}',
         '${escapeSql(data.details)}',
         '${escapeSql(data.ncc_bill_image)}',
-        '${escapeSql(data.ncc_orderid)}'
+        '${escapeSql(data.ncc_orderid)}',
+        '${escapeSql(data.date_create_bill)}'
     )
   `;
     console.log(insertSql);
-    await lemydeQuery(insertSql);
+    await lemydeInsert(insertSql);
     const verifySql = `
     SELECT * FROM crm.ncc_ship
     WHERE order_id = ${data.order_id}
-    ORDER BY id DESC
+    ORDER BY nccship_id DESC
     LIMIT 1
   `;
     const [insertedRecord] = await lemydeQuery(verifySql);

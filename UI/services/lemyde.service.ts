@@ -22,6 +22,22 @@ export async function lemydeQuery<T>(sql: string): Promise<T[]> {
   return response.data.data as T[];
 }
 
+export async function lemydeInsert<T>(sql: string): Promise<T[]> {
+  const response = await axios.get(LEMYDE_API_URL + '/sql/statement', {
+    params: { sql, split: "###$" },
+  });
+
+  console.log('response.status');
+  console.log(response);
+
+  if (response.data.status !== 1) {
+    throw new Error(`Lemyde API error: ${JSON.stringify(response.data)}`);
+  }
+
+  return response.data;
+}
+
+
 /**
  * Fetches customer data by ID
  * @param customerId - Customer ID in Lemyde
@@ -184,13 +200,14 @@ export async function insertNccShip(data: {
   free_ship: number;
   note: string;
   details: string;
+  date_create_bill: string;
 }) {
   // Escape single quotes in strings for SQL
   const escapeSql = (str: string) => str.replace(/'/g, "''");
 
   const insertSql = `
     INSERT INTO crm.ncc_ship 
-    (order_id, ncc_id, ncc_name, total_amount, money_received, free_ship, nccsstatus, note, details, ncc_bill_image, ncc_orderid)
+    (order_id, ncc_id, ncc_name, total_amount, money_received, free_ship, nccsstatus, note, details, ncc_bill_image, ncc_orderid,date_create_bill)
     VALUES (
         ${data.order_id},
         1,
@@ -202,19 +219,20 @@ export async function insertNccShip(data: {
         '${escapeSql(data.note || '')}',
         '${escapeSql(data.details)}',
         '${escapeSql(data.ncc_bill_image)}',
-        '${escapeSql(data.ncc_orderid)}'
+        '${escapeSql(data.ncc_orderid)}',
+        '${escapeSql(data.date_create_bill)}'
     )
   `;
 
   console.log(insertSql);
 
-  await lemydeQuery<any>(insertSql);
+  await lemydeInsert<any>(insertSql);
 
   // Verify the insert by querying the record
   const verifySql = `
     SELECT * FROM crm.ncc_ship
     WHERE order_id = ${data.order_id}
-    ORDER BY id DESC
+    ORDER BY nccship_id DESC
     LIMIT 1
   `;
 
