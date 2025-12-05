@@ -175,6 +175,7 @@ async function createOrder(orderData) {
         discount: 0,
         description: description,
         saleChannelId: orderData.saleChannelId,
+        totalPayment: orderData.cod,
     });
     console.log('***--- createdOrder', createdOrder.id);
     return createdOrder;

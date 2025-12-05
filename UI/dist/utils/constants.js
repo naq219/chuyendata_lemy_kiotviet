@@ -44,7 +44,10 @@ exports.SHOP_CHANNEL_MAPPING = {
     4: 228300,
     34: 229584,
     3: 228304,
-    10: 228307
+    10: 228307,
+    26: 242138,
+    45: 235352,
+    43: 235351,
 };
 exports.KIOTVIET_CONFIG = {
     CLIENT_ID: process.env.KIOTVIET_CLIENT_ID,

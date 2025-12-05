@@ -55,6 +55,7 @@ async function migrateOrder(orderData) {
         note_xuatkho: orderData.note_xuatkho,
         orderId: orderData.orderId,
         saleChannelId,
+        cod: orderData.cod,
     });
     mapping.orders[orderData.orderId] = {
         kiotvietId: createdOrder.id,
@@ -80,7 +81,7 @@ async function remigrateOrder(orderId, orderData) {
     console.log(`✨ Re-migrating order ${orderId}...`);
     const result = await migrateOrder({
         orderId,
-        ...orderData,
+        ...orderData
     });
     console.log(`✅ Re-migration completed for order ${orderId}`);
     return result;

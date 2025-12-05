@@ -65,13 +65,14 @@ export async function migrateProducts(orderDetails: any[]): Promise<MigrationMap
  * @returns Migration result with KiotViet order info
  */
 export async function migrateOrder(orderData: {
-    cod: number;
+   
     orderId: number;
     customerId: number;
     orderDetails: any[];
     shopId: number;
     note?: string;
     note_xuatkho?: string;
+     cod: number;
 }): Promise<{ lemydeOrderId: number; kiotvietOrderId: number; kiotvietOrderCode: string }> {
 
     // Validate shop channel mapping

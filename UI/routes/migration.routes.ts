@@ -22,7 +22,8 @@ router.use((req, res, next) => {
  */
 router.post('/migrate-order', async (req: Request, res: Response) => {
     try {
-        const { orderId, customerId, orderDetails, shopId, note, note_xuatkho } = req.body;
+        const { orderId, customerId, orderDetails, shopId, note, note_xuatkho, total_amount, money_received } = req.body;
+        const cod = (total_amount || 0) - (money_received || 0);
 
         const result = await migrateOrder({
             orderId,
@@ -31,6 +32,7 @@ router.post('/migrate-order', async (req: Request, res: Response) => {
             shopId,
             note,
             note_xuatkho,
+            cod,
         });
 
         return res.json({
@@ -50,7 +52,8 @@ router.post('/migrate-order', async (req: Request, res: Response) => {
  */
 router.post('/remigrate-order', async (req: Request, res: Response) => {
     try {
-        const { orderId, customerId, orderDetails, shopId, note, note_xuatkho } = req.body;
+        const { orderId, customerId, orderDetails, shopId, note, note_xuatkho, total_amount, money_received } = req.body;
+        const cod = (total_amount || 0) - (money_received || 0);
 
         const result = await remigrateOrder(orderId, {
             customerId,
@@ -58,6 +61,7 @@ router.post('/remigrate-order', async (req: Request, res: Response) => {
             shopId,
             note,
             note_xuatkho,
+            cod,
         });
 
         return res.json({
