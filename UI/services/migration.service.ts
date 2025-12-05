@@ -65,6 +65,7 @@ export async function migrateProducts(orderDetails: any[]): Promise<MigrationMap
  * @returns Migration result with KiotViet order info
  */
 export async function migrateOrder(orderData: {
+    cod: number;
     orderId: number;
     customerId: number;
     orderDetails: any[];
@@ -100,6 +101,7 @@ export async function migrateOrder(orderData: {
         note_xuatkho: orderData.note_xuatkho,
         orderId: orderData.orderId,
         saleChannelId,
+        cod: orderData.cod,
     });
 
     // Step 5: Update mapping with order info
@@ -130,6 +132,7 @@ export async function remigrateOrder(
         shopId: number;
         note?: string;
         note_xuatkho?: string;
+        cod: number;
     }
 ): Promise<{ lemydeOrderId: number; kiotvietOrderId: number; kiotvietOrderCode: string }> {
 
@@ -153,7 +156,8 @@ export async function remigrateOrder(
     console.log(`✨ Re-migrating order ${orderId}...`);
     const result = await migrateOrder({
         orderId,
-        ...orderData,
+        ...orderData
+        
     });
 
     console.log(`✅ Re-migration completed for order ${orderId}`);

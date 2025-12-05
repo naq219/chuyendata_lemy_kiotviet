@@ -209,9 +209,10 @@
               {{ formatDate(order.date_created) }}
             </div>
             <div class="order-detail-item">
-              <span class="order-detail-label">Tổng Tiền:</span>
-              {{ formatCurrency(order.total_amount) }}
+              <span class="order-detail-label">COD :</span>
+             {{ formatCurrency(order.total_amount - order.money_received) }} TỔNG: {{ formatCurrency(order.total_amount) }} 
             </div>
+           
           </div>
 
           <div class="order-products" v-if="order.products">

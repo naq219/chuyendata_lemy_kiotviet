@@ -187,6 +187,7 @@ export async function createOrder(orderData: {
     note_xuatkho?: string;
     orderId: number;
     saleChannelId: number;
+    cod: number;
 }) {
     const client = initKiotVietClient();
 
@@ -227,6 +228,7 @@ export async function createOrder(orderData: {
         discount: 0,
         description: description,
         saleChannelId: orderData.saleChannelId,
+        totalPayment: orderData.cod,
     });
 
     console.log('***--- createdOrder', createdOrder.id);

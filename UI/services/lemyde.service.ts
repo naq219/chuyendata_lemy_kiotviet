@@ -102,6 +102,7 @@ export async function getOrders(orderIds?: string[]) {
       o.note,
       c.note_xuatkho,
       o.total_amount,
+      o.money_received,
       c.name AS customer_name,
       c.phone AS customer_phone,
       c.address AS customer_address,

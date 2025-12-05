@@ -191,6 +191,7 @@ createApp({
                     shopId: order.shop_id,
                     note_xuatkho: order.note_xuatkho,
                     note: order.note,
+                    cod: order.total_amount - order.money_received,
                 });
 
                 if (result.success) {

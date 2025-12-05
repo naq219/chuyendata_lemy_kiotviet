@@ -24,7 +24,12 @@ export const SHOP_CHANNEL_MAPPING: Record<number, number> = {
     4: 228300,
     34: 229584,
     3: 228304,
-    10: 228307
+    10: 228307,
+    26: 242138,
+    45: 235352, //shop gia hân
+    43: 235351, //trâm anh
+
+
 };
 
 /**
